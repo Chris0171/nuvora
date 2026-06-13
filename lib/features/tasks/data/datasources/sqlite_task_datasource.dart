@@ -57,6 +57,9 @@ class SQLiteTaskDataSource implements TaskDataSource {
               repeat_type TEXT NOT NULL
             )
           ''');
+          await db.execute(
+            'CREATE INDEX idx_tasks_created_at ON $_tableName(created_at DESC)',
+          );
         },
       ),
     );
@@ -123,6 +126,24 @@ class SQLiteTaskDataSource implements TaskDataSource {
 
     if (updated == 0) {
       throw StateError('Task not found for update: ${task.id}');
+    }
+  }
+
+  @override
+  Future<void> updateTaskCompletion({
+    required String taskId,
+    required bool isCompleted,
+  }) async {
+    final db = await _db;
+    final updated = await db.update(
+      _tableName,
+      <String, Object?>{'is_completed': isCompleted ? 1 : 0},
+      where: 'id = ?',
+      whereArgs: <Object?>[taskId],
+    );
+
+    if (updated == 0) {
+      throw StateError('Task not found for update: $taskId');
     }
   }
 

@@ -23,6 +23,17 @@ class TaskRepositoryImpl implements TaskRepository {
 	}
 
 	@override
+	Future<void> updateTaskCompletion({
+		required String taskId,
+		required bool isCompleted,
+	}) async {
+		await dataSource.updateTaskCompletion(
+			taskId: taskId,
+			isCompleted: isCompleted,
+		);
+	}
+
+	@override
 	Future<void> deleteTask(String taskId) async {
 		await dataSource.deleteTask(taskId);
 	}

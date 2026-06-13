@@ -26,9 +26,9 @@ class TaskController {
 		required String taskId,
 		required bool isCompleted,
 	}) async {
-		final List<Task> tasks = await repository.getTasks();
-		final Task currentTask = tasks.firstWhere((Task task) => task.id == taskId);
-		final Task updatedTask = currentTask.copyWith(isCompleted: isCompleted);
-		await repository.updateTask(updatedTask);
+		await repository.updateTaskCompletion(
+			taskId: taskId,
+			isCompleted: isCompleted,
+		);
 	}
 }
