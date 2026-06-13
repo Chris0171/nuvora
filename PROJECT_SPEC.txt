@@ -1,0 +1,237 @@
+Quiero desarrollar una aplicación móvil usando Flutter y Dart. 
+
+Necesito que generes la estructura completa del proyecto siguiendo buenas prácticas de arquitectura escalable, separación de responsabilidades y código mantenible.
+
+La aplicación es una app de productividad personal centrada en gestión de tareas diarias, notas, alarmas, recordatorios y notificaciones locales.
+
+OBJETIVO GENERAL:
+
+Crear una aplicación similar conceptualmente a Todoist, TickTick o Google Keep.
+
+FUNCIONALIDADES PRINCIPALES:
+
+1. Crear tareas diarias.
+2. Editar tareas.
+3. Eliminar tareas.
+4. Marcar tareas como completadas.
+5. Crear notas independientes.
+6. Editar notas.
+7. Eliminar notas.
+8. Programar alarmas para tareas o notas.
+9. Programar recordatorios con fecha y hora.
+10. Enviar notificaciones locales al usuario.
+11. Soportar tareas repetitivas (diarias, semanales, mensuales).
+12. Agrupar tareas por categorías.
+13. Mantener estadísticas de productividad.
+14. Guardar preferencias del usuario.
+15. Persistencia local con base de datos SQLite o Drift.
+
+ARQUITECTURA:
+
+Quiero una arquitectura modular por features, no una estructura simple.
+
+Usar esta organización:
+
+lib/
+ ├── core/
+ │    ├── constants/
+ │    ├── theme/
+ │    ├── utils/
+ │    └── errors/
+ │
+ ├── features/
+ │
+ │    ├── tasks/
+ │    │     ├── data/
+ │    │     │     ├── repositories/
+ │    │     │     └── datasources/
+ │    │     │
+ │    │     ├── domain/
+ │    │     │     ├── entities/
+ │    │     │     └── repositories/
+ │    │     │
+ │    │     ├── application/
+ │    │     │     └── controllers/
+ │    │     │
+ │    │     └── presentation/
+ │    │           ├── screens/
+ │    │           └── widgets/
+ │
+ │    ├── notes/
+ │    │      repetir misma estructura
+ │
+ │    ├── reminders/
+ │    │      repetir misma estructura
+ │
+ │    ├── notifications/
+ │    │      repetir misma estructura
+ │
+ │    └── settings/
+ │           repetir misma estructura
+ │
+ ├── services/
+ │    ├── database_service.dart
+ │    ├── notification_service.dart
+ │    ├── permission_service.dart
+ │    └── alarm_service.dart
+ │
+ └── main.dart
+
+
+REQUISITOS DE MODELOS (CLASES):
+
+Crear las siguientes entidades.
+
+Task:
+- String id
+- String title
+- String? description
+- DateTime createdAt
+- DateTime? dueDate
+- bool isCompleted
+- Priority priority
+- String? categoryId
+- RepeatType repeatType
+
+Note:
+- String id
+- String title
+- String content
+- DateTime createdAt
+- DateTime updatedAt
+- bool isPinned
+
+Reminder:
+- String id
+- DateTime scheduledTime
+- String relatedItemId
+- ReminderType type
+- bool enabled
+
+Category:
+- String id
+- String name
+
+NotificationData:
+- int notificationId
+- String title
+- String body
+- DateTime scheduledDate
+- bool isRecurring
+
+UserSettings:
+- bool darkMode
+- bool notificationsEnabled
+- String language
+
+TaskStatistics:
+- int completedToday
+- int pendingTasks
+- int streak
+
+
+ENUMS NECESARIOS:
+
+Priority:
+- low
+- medium
+- high
+- urgent
+
+RepeatType:
+- none
+- daily
+- weekly
+- monthly
+
+ReminderType:
+- task
+- note
+
+
+REPOSITORIES:
+
+TaskRepository:
+- getTasks()
+- createTask()
+- updateTask()
+- deleteTask()
+
+NoteRepository:
+- getNotes()
+- createNote()
+- updateNote()
+- deleteNote()
+
+ReminderRepository:
+- createReminder()
+- deleteReminder()
+
+
+SERVICES:
+
+NotificationService
+- scheduleNotification()
+- cancelNotification()
+
+AlarmService
+- createAlarm()
+- removeAlarm()
+
+DatabaseService
+- init()
+- insert()
+- update()
+- delete()
+- query()
+
+PermissionService
+- requestNotificationPermission()
+
+
+STATE MANAGEMENT:
+
+Usar Riverpod.
+
+Crear controllers/providers separados:
+
+TaskController
+NoteController
+ReminderController
+SettingsController
+
+
+PRESENTATION:
+
+Crear pantallas iniciales vacías:
+
+home_screen.dart
+task_list_screen.dart
+create_task_screen.dart
+task_detail_screen.dart
+notes_screen.dart
+create_note_screen.dart
+calendar_screen.dart
+statistics_screen.dart
+settings_screen.dart
+
+
+IMPORTANTE:
+
+No generar toda la lógica todavía.
+
+Solo quiero:
+
+1. Crear toda la estructura de carpetas.
+2. Crear todos los archivos.
+3. Crear clases base con atributos.
+4. Crear interfaces abstractas de repositories.
+5. Crear services vacíos con métodos definidos.
+6. Crear controllers/providers vacíos.
+7. Preparar el proyecto para escalar.
+
+Usar código limpio, buenas prácticas, comentarios y separación estricta de responsabilidades.
+
+No simplificar la arquitectura.
+
+Piensa como si esta aplicación fuera a publicarse en Google Play Store y Apple App Store.
