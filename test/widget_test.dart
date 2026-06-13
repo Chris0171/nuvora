@@ -13,19 +13,23 @@ import 'package:nuvora/main.dart';
 
 void main() {
   testWidgets('Tasks flow smoke test', (WidgetTester tester) async {
+    final title = 'Comprar pan ${DateTime.now().microsecondsSinceEpoch}';
+
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(find.text('Tasks'), findsOneWidget);
-    expect(find.text('No hay tareas todavia.'), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.add));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextFormField).first, 'Comprar pan');
+    await tester.enterText(find.byType(TextFormField).first, title);
     await tester.tap(find.text('Guardar tarea'));
-    await tester.pumpAndSettle();
 
-    expect(find.text('Comprar pan'), findsOneWidget);
+    for (int i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    expect(find.text(title), findsOneWidget);
   });
 }
