@@ -3,8 +3,7 @@ import 'package:nuvora/features/tasks/domain/entities/task.dart';
 import 'package:nuvora/features/tasks/domain/repositories/task_repository.dart';
 
 class TaskRepositoryImpl implements TaskRepository {
-	TaskRepositoryImpl({required TaskDataSource localDataSource})
-			: dataSource = localDataSource;
+	TaskRepositoryImpl({required this.dataSource});
 
 	final TaskDataSource dataSource;
 
