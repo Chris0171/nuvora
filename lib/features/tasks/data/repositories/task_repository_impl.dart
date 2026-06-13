@@ -1,29 +1,30 @@
-import 'package:nuvora/features/tasks/data/datasources/task_local_datasource.dart';
+import 'package:nuvora/features/tasks/data/datasources/task_datasource.dart';
 import 'package:nuvora/features/tasks/domain/entities/task.dart';
 import 'package:nuvora/features/tasks/domain/repositories/task_repository.dart';
 
 class TaskRepositoryImpl implements TaskRepository {
-	TaskRepositoryImpl({required this.localDataSource});
+	TaskRepositoryImpl({required TaskDataSource localDataSource})
+			: dataSource = localDataSource;
 
-	final TaskLocalDataSource localDataSource;
+	final TaskDataSource dataSource;
 
 	@override
 	Future<List<Task>> getTasks() async {
-		return localDataSource.getTasks();
+		return dataSource.getTasks();
 	}
 
 	@override
 	Future<void> createTask(Task task) async {
-		await localDataSource.createTask(task);
+		await dataSource.createTask(task);
 	}
 
 	@override
 	Future<void> updateTask(Task task) async {
-		await localDataSource.updateTask(task);
+		await dataSource.updateTask(task);
 	}
 
 	@override
 	Future<void> deleteTask(String taskId) async {
-		await localDataSource.deleteTask(taskId);
+		await dataSource.deleteTask(taskId);
 	}
 }
