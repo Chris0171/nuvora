@@ -9,10 +9,11 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 class SQLiteTaskDataSource implements TaskDataSource {
   static const String _databaseName = 'nuvora_tasks.db';
-  static const int _databaseVersion = 2;
+  static const int _databaseVersion = 3;
   static const String _tableName = 'tasks';
 
   Database? _database;
+  Future<Database>? _openingDatabase;
   DatabaseFactory? _databaseFactory;
 
   Future<DatabaseFactory> get _resolvedFactory async {
@@ -35,11 +36,25 @@ class SQLiteTaskDataSource implements TaskDataSource {
       return _database!;
     }
 
+    if (_openingDatabase != null) {
+      return _openingDatabase!;
+    }
+
+    _openingDatabase = _openDatabase();
+    try {
+      _database = await _openingDatabase!;
+      return _database!;
+    } finally {
+      _openingDatabase = null;
+    }
+  }
+
+  Future<Database> _openDatabase() async {
     final factory = await _resolvedFactory;
     final dbPath = await factory.getDatabasesPath();
     final path = p.join(dbPath, _databaseName);
 
-    _database = await factory.openDatabase(
+    return factory.openDatabase(
       path,
       options: OpenDatabaseOptions(
         version: _databaseVersion,
@@ -66,6 +81,9 @@ class SQLiteTaskDataSource implements TaskDataSource {
           await db.execute(
             'CREATE INDEX idx_tasks_deleted_created ON $_tableName(deleted_at, created_at DESC)',
           );
+          await db.execute(
+            'CREATE INDEX idx_tasks_active_created ON $_tableName(created_at DESC) WHERE deleted_at IS NULL',
+          );
         },
         onUpgrade: (db, oldVersion, newVersion) async {
           if (oldVersion < 2) {
@@ -85,11 +103,15 @@ class SQLiteTaskDataSource implements TaskDataSource {
               'CREATE INDEX IF NOT EXISTS idx_tasks_deleted_created ON $_tableName(deleted_at, created_at DESC)',
             );
           }
+
+          if (oldVersion < 3) {
+            await db.execute(
+              'CREATE INDEX IF NOT EXISTS idx_tasks_active_created ON $_tableName(created_at DESC) WHERE deleted_at IS NULL',
+            );
+          }
         },
       ),
     );
-
-    return _database!;
   }
 
   Map<String, Object?> _taskToMap(Task task) {
