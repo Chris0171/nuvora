@@ -23,4 +23,28 @@ class Task {
 	final Priority priority;
 	final String? categoryId;
 	final RepeatType repeatType;
+
+	Task copyWith({
+		String? id,
+		String? title,
+		String? description,
+		DateTime? createdAt,
+		DateTime? dueDate,
+		bool? isCompleted,
+		Priority? priority,
+		String? categoryId,
+		RepeatType? repeatType,
+	}) {
+		return Task(
+			id: id ?? this.id,
+			title: title ?? this.title,
+			description: description ?? this.description,
+			createdAt: createdAt ?? this.createdAt,
+			dueDate: dueDate ?? this.dueDate,
+			isCompleted: isCompleted ?? this.isCompleted,
+			priority: priority ?? this.priority,
+			categoryId: categoryId ?? this.categoryId,
+			repeatType: repeatType ?? this.repeatType,
+		);
+	}
 }
