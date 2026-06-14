@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:nuvora/core/constants/priority.dart';
+import 'package:nuvora/core/errors/app_error.dart';
 import 'package:nuvora/core/constants/repeat_type.dart';
 import 'package:nuvora/features/tasks/data/datasources/task_datasource.dart';
 import 'package:nuvora/features/tasks/domain/entities/task.dart';
@@ -8,9 +9,18 @@ import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 class SQLiteTaskDataSource implements TaskDataSource {
+  SQLiteTaskDataSource({
+    DatabaseFactory? databaseFactory,
+    String? databasePath,
+  })  : _injectedFactory = databaseFactory,
+        _injectedPath = databasePath;
+
   static const String _databaseName = 'nuvora_tasks.db';
   static const int _databaseVersion = 3;
   static const String _tableName = 'tasks';
+
+  final DatabaseFactory? _injectedFactory;
+  final String? _injectedPath;
 
   Database? _database;
   Future<Database>? _openingDatabase;
@@ -18,6 +28,11 @@ class SQLiteTaskDataSource implements TaskDataSource {
 
   Future<DatabaseFactory> get _resolvedFactory async {
     if (_databaseFactory != null) {
+      return _databaseFactory!;
+    }
+
+    if (_injectedFactory != null) {
+      _databaseFactory = _injectedFactory;
       return _databaseFactory!;
     }
 
@@ -51,8 +66,8 @@ class SQLiteTaskDataSource implements TaskDataSource {
 
   Future<Database> _openDatabase() async {
     final factory = await _resolvedFactory;
-    final dbPath = await factory.getDatabasesPath();
-    final path = p.join(dbPath, _databaseName);
+    final path = _injectedPath ??
+        p.join(await factory.getDatabasesPath(), _databaseName);
 
     return factory.openDatabase(
       path,
@@ -168,11 +183,18 @@ class SQLiteTaskDataSource implements TaskDataSource {
   @override
   Future<void> createTask(Task task) async {
     final db = await _db;
-    await db.insert(
-      _tableName,
-      _taskToMap(task),
-      conflictAlgorithm: ConflictAlgorithm.abort,
-    );
+    try {
+      await db.insert(
+        _tableName,
+        _taskToMap(task),
+        conflictAlgorithm: ConflictAlgorithm.abort,
+      );
+    } on DatabaseException catch (e) {
+      if (e.isUniqueConstraintError()) {
+        throw TaskAlreadyExistsException(task.id);
+      }
+      rethrow;
+    }
   }
 
   @override
@@ -187,7 +209,7 @@ class SQLiteTaskDataSource implements TaskDataSource {
     );
 
     if (updated == 0) {
-      throw StateError('Task not found for update: ${task.id}');
+      throw TaskNotFoundException(task.id);
     }
   }
 
@@ -208,7 +230,7 @@ class SQLiteTaskDataSource implements TaskDataSource {
     );
 
     if (updated == 0) {
-      throw StateError('Task not found for update: $taskId');
+      throw TaskNotFoundException(taskId);
     }
   }
 
@@ -226,7 +248,7 @@ class SQLiteTaskDataSource implements TaskDataSource {
     );
 
     if (deleted == 0) {
-      throw StateError('Task not found for delete: $taskId');
+      throw TaskNotFoundException(taskId);
     }
   }
 }
