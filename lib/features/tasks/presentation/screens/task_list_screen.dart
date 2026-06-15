@@ -21,17 +21,38 @@ class TaskListScreen extends ConsumerWidget {
 					itemBuilder: (context, index) {
 						final task = tasks[index];
 						return TaskItem(
+							key: ValueKey(task.id),
 							task: task,
 							onToggleCompleted: (value) async {
-								await ref.read(taskControllerProvider).markTaskAsCompleted(
-									taskId: task.id,
-									isCompleted: value,
-								);
-								ref.invalidate(tasksProvider);
+								try {
+									await ref.read(taskControllerProvider).markTaskAsCompleted(
+										taskId: task.id,
+										isCompleted: value,
+									);
+									ref.invalidate(tasksProvider);
+								} catch (_) {
+									if (context.mounted) {
+										ScaffoldMessenger.of(context).showSnackBar(
+											const SnackBar(
+												content: Text('No se pudo actualizar la tarea.'),
+											),
+										);
+									}
+								}
 							},
 							onDelete: () async {
-								await ref.read(taskControllerProvider).deleteTask(task.id);
-								ref.invalidate(tasksProvider);
+								try {
+									await ref.read(taskControllerProvider).deleteTask(task.id);
+									ref.invalidate(tasksProvider);
+								} catch (_) {
+									if (context.mounted) {
+										ScaffoldMessenger.of(context).showSnackBar(
+											const SnackBar(
+												content: Text('No se pudo eliminar la tarea.'),
+											),
+										);
+									}
+								}
 							},
 						);
 					},

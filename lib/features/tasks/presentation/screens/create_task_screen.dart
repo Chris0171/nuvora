@@ -16,6 +16,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 	final _formKey = GlobalKey<FormState>();
 	final _titleController = TextEditingController();
 	final _descriptionController = TextEditingController();
+	bool _isSaving = false;
 
 	@override
 	void dispose() {
@@ -25,9 +26,11 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 	}
 
 	Future<void> _saveTask() async {
-		if (!_formKey.currentState!.validate()) {
+		if (!_formKey.currentState!.validate() || _isSaving) {
 			return;
 		}
+
+		setState(() => _isSaving = true);
 
 		final newTask = Task(
 			id: DateTime.now().microsecondsSinceEpoch.toString(),
@@ -43,11 +46,20 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 			repeatType: RepeatType.none,
 		);
 
-		await ref.read(taskControllerProvider).createTask(newTask);
-		ref.invalidate(tasksProvider);
-
-		if (mounted) {
-			Navigator.of(context).pop(true);
+		try {
+			await ref.read(taskControllerProvider).createTask(newTask);
+			ref.invalidate(tasksProvider);
+			if (mounted) {
+				Navigator.of(context).pop(true);
+			}
+		} catch (_) {
+			if (mounted) {
+				ScaffoldMessenger.of(context).showSnackBar(
+					const SnackBar(content: Text('No se pudo guardar la tarea.')),
+				);
+			}
+		} finally {
+			if (mounted) setState(() => _isSaving = false);
 		}
 	}
 
@@ -80,8 +92,14 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 							SizedBox(
 								width: double.infinity,
 								child: ElevatedButton(
-									onPressed: _saveTask,
-									child: const Text('Guardar tarea'),
+									onPressed: _isSaving ? null : _saveTask,
+									child: _isSaving
+											? const SizedBox(
+													height: 20,
+													width: 20,
+													child: CircularProgressIndicator(strokeWidth: 2),
+												)
+											: const Text('Guardar tarea'),
 								),
 							),
 						],

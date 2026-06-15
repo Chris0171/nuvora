@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:nuvora/core/constants/priority.dart';
 import 'package:nuvora/core/errors/app_error.dart';
+import 'package:nuvora/core/utils/app_logger.dart';
 import 'package:nuvora/core/constants/repeat_type.dart';
 import 'package:nuvora/features/tasks/data/datasources/task_datasource.dart';
 import 'package:nuvora/features/tasks/domain/entities/task.dart';
@@ -25,6 +26,7 @@ class SQLiteTaskDataSource implements TaskDataSource {
   Database? _database;
   Future<Database>? _openingDatabase;
   DatabaseFactory? _databaseFactory;
+  static final AppLogger _log = AppLogger('SQLiteTaskDataSource');
 
   Future<DatabaseFactory> get _resolvedFactory async {
     if (_databaseFactory != null) {
@@ -69,6 +71,7 @@ class SQLiteTaskDataSource implements TaskDataSource {
     final path = _injectedPath ??
         p.join(await factory.getDatabasesPath(), _databaseName);
 
+    _log.info('Opening database', path);
     return factory.openDatabase(
       path,
       options: OpenDatabaseOptions(
@@ -183,6 +186,7 @@ class SQLiteTaskDataSource implements TaskDataSource {
   @override
   Future<void> createTask(Task task) async {
     final db = await _db;
+    _log.debug('createTask', task.id);
     try {
       await db.insert(
         _tableName,
@@ -200,6 +204,7 @@ class SQLiteTaskDataSource implements TaskDataSource {
   @override
   Future<void> updateTask(Task task) async {
     final db = await _db;
+    _log.debug('updateTask', task.id);
     final taskToUpdate = task.copyWith(updatedAt: DateTime.now());
     final updated = await db.update(
       _tableName,
@@ -237,6 +242,7 @@ class SQLiteTaskDataSource implements TaskDataSource {
   @override
   Future<void> deleteTask(String taskId) async {
     final db = await _db;
+    _log.debug('deleteTask (soft)', taskId);
     final deleted = await db.update(
       _tableName,
       <String, Object?>{
