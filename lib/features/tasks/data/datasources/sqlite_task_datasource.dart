@@ -1,135 +1,85 @@
-import 'dart:io';
-
 import 'package:nuvora/core/constants/priority.dart';
+import 'package:nuvora/core/database/sqlite_datasource_base.dart';
 import 'package:nuvora/core/errors/app_error.dart';
-import 'package:nuvora/core/utils/app_logger.dart';
 import 'package:nuvora/core/constants/repeat_type.dart';
 import 'package:nuvora/features/tasks/data/datasources/task_datasource.dart';
 import 'package:nuvora/features/tasks/domain/entities/task.dart';
-import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-class SQLiteTaskDataSource implements TaskDataSource {
+class SQLiteTaskDataSource extends SqliteDatasourceBase
+    implements TaskDataSource {
   SQLiteTaskDataSource({
-    DatabaseFactory? databaseFactory,
-    String? databasePath,
-  })  : _injectedFactory = databaseFactory,
-        _injectedPath = databasePath;
+    super.databaseFactory,
+    super.databasePath,
+  });
 
-  static const String _databaseName = 'nuvora_tasks.db';
-  static const int _databaseVersion = 3;
-  static const String _tableName = 'tasks';
+  @override
+  String get databaseName => 'nuvora_tasks.db';
 
-  final DatabaseFactory? _injectedFactory;
-  final String? _injectedPath;
+  @override
+  int get databaseVersion => 3;
 
-  Database? _database;
-  Future<Database>? _openingDatabase;
-  DatabaseFactory? _databaseFactory;
-  static final AppLogger _log = AppLogger('SQLiteTaskDataSource');
+  @override
+  String get tableName => 'tasks';
 
-  Future<DatabaseFactory> get _resolvedFactory async {
-    if (_databaseFactory != null) {
-      return _databaseFactory!;
-    }
-
-    if (_injectedFactory != null) {
-      _databaseFactory = _injectedFactory;
-      return _databaseFactory!;
-    }
-
-    if (Platform.isAndroid || Platform.isIOS) {
-      _databaseFactory = databaseFactory;
-    } else {
-      sqfliteFfiInit();
-      _databaseFactory = databaseFactoryFfi;
-    }
-
-    return _databaseFactory!;
-  }
-
-  Future<Database> get _db async {
-    if (_database != null) {
-      return _database!;
-    }
-
-    if (_openingDatabase != null) {
-      return _openingDatabase!;
-    }
-
-    _openingDatabase = _openDatabase();
-    try {
-      _database = await _openingDatabase!;
-      return _database!;
-    } finally {
-      _openingDatabase = null;
-    }
-  }
-
-  Future<Database> _openDatabase() async {
-    final factory = await _resolvedFactory;
-    final path = _injectedPath ??
-        p.join(await factory.getDatabasesPath(), _databaseName);
-
-    _log.info('Opening database', path);
-    return factory.openDatabase(
-      path,
-      options: OpenDatabaseOptions(
-        version: _databaseVersion,
-        onCreate: (db, version) async {
-          await db.execute('''
-            CREATE TABLE $_tableName (
-              id TEXT PRIMARY KEY,
-              title TEXT NOT NULL,
-              description TEXT,
-              created_at INTEGER NOT NULL,
-              updated_at INTEGER NOT NULL,
-              due_date INTEGER,
-              is_completed INTEGER NOT NULL,
-              priority TEXT NOT NULL,
-              category_id TEXT,
-              repeat_type TEXT NOT NULL,
-              archived INTEGER NOT NULL DEFAULT 0,
-              deleted_at INTEGER
-            )
-          ''');
-          await db.execute(
-            'CREATE INDEX idx_tasks_created_at ON $_tableName(created_at DESC)',
-          );
-          await db.execute(
-            'CREATE INDEX idx_tasks_deleted_created ON $_tableName(deleted_at, created_at DESC)',
-          );
-          await db.execute(
-            'CREATE INDEX idx_tasks_active_created ON $_tableName(created_at DESC) WHERE deleted_at IS NULL',
-          );
-        },
-        onUpgrade: (db, oldVersion, newVersion) async {
-          if (oldVersion < 2) {
-            await db.execute(
-              'ALTER TABLE $_tableName ADD COLUMN updated_at INTEGER',
-            );
-            await db.execute(
-              'ALTER TABLE $_tableName ADD COLUMN archived INTEGER NOT NULL DEFAULT 0',
-            );
-            await db.execute(
-              'ALTER TABLE $_tableName ADD COLUMN deleted_at INTEGER',
-            );
-            await db.execute(
-              'UPDATE $_tableName SET updated_at = created_at WHERE updated_at IS NULL',
-            );
-            await db.execute(
-              'CREATE INDEX IF NOT EXISTS idx_tasks_deleted_created ON $_tableName(deleted_at, created_at DESC)',
-            );
-          }
-
-          if (oldVersion < 3) {
-            await db.execute(
-              'CREATE INDEX IF NOT EXISTS idx_tasks_active_created ON $_tableName(created_at DESC) WHERE deleted_at IS NULL',
-            );
-          }
-        },
-      ),
+  @override
+  Future<void> onCreateSchema(Database db, int version) async {
+    await db.execute('''
+      CREATE TABLE $tableName (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        due_date INTEGER,
+        is_completed INTEGER NOT NULL,
+        priority TEXT NOT NULL,
+        category_id TEXT,
+        repeat_type TEXT NOT NULL,
+        archived INTEGER NOT NULL DEFAULT 0,
+        deleted_at INTEGER
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX idx_tasks_created_at ON $tableName(created_at DESC)',
     );
+    await db.execute(
+      'CREATE INDEX idx_tasks_deleted_created ON $tableName(deleted_at, created_at DESC)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_tasks_active_created ON $tableName(created_at DESC) WHERE deleted_at IS NULL',
+    );
+  }
+
+  @override
+  Future<void> onUpgradeSchema(
+    Database db,
+    int oldVersion,
+    int newVersion,
+  ) async {
+    if (oldVersion < 2) {
+      await db.execute(
+        'ALTER TABLE $tableName ADD COLUMN updated_at INTEGER',
+      );
+      await db.execute(
+        'ALTER TABLE $tableName ADD COLUMN archived INTEGER NOT NULL DEFAULT 0',
+      );
+      await db.execute(
+        'ALTER TABLE $tableName ADD COLUMN deleted_at INTEGER',
+      );
+      await db.execute(
+        'UPDATE $tableName SET updated_at = created_at WHERE updated_at IS NULL',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_tasks_deleted_created ON $tableName(deleted_at, created_at DESC)',
+      );
+    }
+
+    if (oldVersion < 3) {
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_tasks_active_created ON $tableName(created_at DESC) WHERE deleted_at IS NULL',
+      );
+    }
   }
 
   Map<String, Object?> _taskToMap(Task task) {
@@ -174,9 +124,9 @@ class SQLiteTaskDataSource implements TaskDataSource {
 
   @override
   Future<List<Task>> getTasks() async {
-    final db = await _db;
-    final rows = await db.query(
-      _tableName,
+    final database = await db;
+    final rows = await database.query(
+      tableName,
       where: 'deleted_at IS NULL',
       orderBy: 'created_at DESC',
     );
@@ -185,11 +135,11 @@ class SQLiteTaskDataSource implements TaskDataSource {
 
   @override
   Future<void> createTask(Task task) async {
-    final db = await _db;
-    _log.debug('createTask', task.id);
+    final database = await db;
+    logger.debug('createTask', task.id);
     try {
-      await db.insert(
-        _tableName,
+      await database.insert(
+        tableName,
         _taskToMap(task),
         conflictAlgorithm: ConflictAlgorithm.abort,
       );
@@ -203,11 +153,11 @@ class SQLiteTaskDataSource implements TaskDataSource {
 
   @override
   Future<void> updateTask(Task task) async {
-    final db = await _db;
-    _log.debug('updateTask', task.id);
+    final database = await db;
+    logger.debug('updateTask', task.id);
     final taskToUpdate = task.copyWith(updatedAt: DateTime.now());
-    final updated = await db.update(
-      _tableName,
+    final updated = await database.update(
+      tableName,
       _taskToMap(taskToUpdate),
       where: 'id = ? AND deleted_at IS NULL',
       whereArgs: <Object?>[task.id],
@@ -223,9 +173,9 @@ class SQLiteTaskDataSource implements TaskDataSource {
     required String taskId,
     required bool isCompleted,
   }) async {
-    final db = await _db;
-    final updated = await db.update(
-      _tableName,
+    final database = await db;
+    final updated = await database.update(
+      tableName,
       <String, Object?>{
         'is_completed': isCompleted ? 1 : 0,
         'updated_at': DateTime.now().millisecondsSinceEpoch,
@@ -241,10 +191,10 @@ class SQLiteTaskDataSource implements TaskDataSource {
 
   @override
   Future<void> deleteTask(String taskId) async {
-    final db = await _db;
-    _log.debug('deleteTask (soft)', taskId);
-    final deleted = await db.update(
-      _tableName,
+    final database = await db;
+    logger.debug('deleteTask (soft)', taskId);
+    final deleted = await database.update(
+      tableName,
       <String, Object?>{
         'deleted_at': DateTime.now().millisecondsSinceEpoch,
         'updated_at': DateTime.now().millisecondsSinceEpoch,

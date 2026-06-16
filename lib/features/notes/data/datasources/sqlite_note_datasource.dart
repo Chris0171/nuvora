@@ -1,104 +1,61 @@
-import 'dart:io';
-
+import 'package:nuvora/core/database/sqlite_datasource_base.dart';
 import 'package:nuvora/core/errors/app_error.dart';
-import 'package:nuvora/core/utils/app_logger.dart';
 import 'package:nuvora/features/notes/data/datasources/note_local_datasource.dart';
 import 'package:nuvora/features/notes/domain/entities/note.dart';
-import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-class SQLiteNoteDataSource implements NoteDataSource {
+class SQLiteNoteDataSource extends SqliteDatasourceBase
+    implements NoteDataSource {
   SQLiteNoteDataSource({
-    DatabaseFactory? databaseFactory,
-    String? databasePath,
-  })  : _injectedFactory = databaseFactory,
-        _injectedPath = databasePath;
+    super.databaseFactory,
+    super.databasePath,
+  });
 
-  static const String _databaseName = 'nuvora_notes.db';
-  static const int _databaseVersion = 2;
-  static const String _tableName = 'notes';
+  @override
+  String get databaseName => 'nuvora_notes.db';
 
-  final DatabaseFactory? _injectedFactory;
-  final String? _injectedPath;
+  @override
+  int get databaseVersion => 2;
 
-  Database? _database;
-  Future<Database>? _openingDatabase;
-  DatabaseFactory? _databaseFactory;
-  static final AppLogger _log = AppLogger('SQLiteNoteDataSource');
+  @override
+  String get tableName => 'notes';
 
-  Future<DatabaseFactory> get _resolvedFactory async {
-    if (_databaseFactory != null) return _databaseFactory!;
-
-    if (_injectedFactory != null) {
-      _databaseFactory = _injectedFactory;
-      return _databaseFactory!;
-    }
-
-    if (Platform.isAndroid || Platform.isIOS) {
-      _databaseFactory = databaseFactory;
-    } else {
-      sqfliteFfiInit();
-      _databaseFactory = databaseFactoryFfi;
-    }
-
-    return _databaseFactory!;
-  }
-
-  Future<Database> get _db async {
-    if (_database != null) return _database!;
-    if (_openingDatabase != null) return _openingDatabase!;
-
-    _openingDatabase = _openDatabase();
-    try {
-      _database = await _openingDatabase!;
-      return _database!;
-    } finally {
-      _openingDatabase = null;
-    }
-  }
-
-  Future<Database> _openDatabase() async {
-    final factory = await _resolvedFactory;
-    final path =
-        _injectedPath ?? p.join(await factory.getDatabasesPath(), _databaseName);
-
-    _log.info('Opening database', path);
-    return factory.openDatabase(
-      path,
-      options: OpenDatabaseOptions(
-        version: _databaseVersion,
-        onCreate: (db, version) async {
-          await db.execute('''
-            CREATE TABLE $_tableName (
-              id TEXT PRIMARY KEY,
-              title TEXT NOT NULL,
-              content TEXT NOT NULL,
-              created_at INTEGER NOT NULL,
-              updated_at INTEGER NOT NULL,
-              is_pinned INTEGER NOT NULL,
-              archived INTEGER NOT NULL DEFAULT 0,
-              deleted_at INTEGER
-            )
-          ''');
-          await db.execute(
-            'CREATE INDEX idx_notes_active_updated ON $_tableName(updated_at DESC) WHERE deleted_at IS NULL',
-          );
-        },
-        onUpgrade: (db, oldVersion, newVersion) async {
-          if (oldVersion < 2) {
-            await db.execute(
-              'ALTER TABLE $_tableName ADD COLUMN archived INTEGER NOT NULL DEFAULT 0',
-            );
-            await db.execute(
-              'ALTER TABLE $_tableName ADD COLUMN deleted_at INTEGER',
-            );
-            await db.execute(
-              'CREATE INDEX IF NOT EXISTS idx_notes_active_updated ON $_tableName(updated_at DESC) WHERE deleted_at IS NULL',
-            );
-          }
-        },
-      ),
+  @override
+  Future<void> onCreateSchema(Database db, int version) async {
+    await db.execute('''
+      CREATE TABLE $tableName (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        content TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        is_pinned INTEGER NOT NULL,
+        archived INTEGER NOT NULL DEFAULT 0,
+        deleted_at INTEGER
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX idx_notes_active_updated ON $tableName(updated_at DESC) WHERE deleted_at IS NULL',
     );
+  }
+
+  @override
+  Future<void> onUpgradeSchema(
+    Database db,
+    int oldVersion,
+    int newVersion,
+  ) async {
+    if (oldVersion < 2) {
+      await db.execute(
+        'ALTER TABLE $tableName ADD COLUMN archived INTEGER NOT NULL DEFAULT 0',
+      );
+      await db.execute(
+        'ALTER TABLE $tableName ADD COLUMN deleted_at INTEGER',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_notes_active_updated ON $tableName(updated_at DESC) WHERE deleted_at IS NULL',
+      );
+    }
   }
 
   Map<String, Object?> _noteToMap(Note note) {
@@ -131,9 +88,9 @@ class SQLiteNoteDataSource implements NoteDataSource {
 
   @override
   Future<List<Note>> getNotes() async {
-    final db = await _db;
-    final rows = await db.query(
-      _tableName,
+    final database = await db;
+    final rows = await database.query(
+      tableName,
       where: 'deleted_at IS NULL',
       orderBy: 'updated_at DESC',
     );
@@ -145,10 +102,10 @@ class SQLiteNoteDataSource implements NoteDataSource {
     final String cleanedQuery = query.trim();
     if (cleanedQuery.isEmpty) return getNotes();
 
-    final db = await _db;
+    final database = await db;
     final String pattern = '%$cleanedQuery%';
-    final rows = await db.query(
-      _tableName,
+    final rows = await database.query(
+      tableName,
       where:
           'deleted_at IS NULL AND (title LIKE ? COLLATE NOCASE OR content LIKE ? COLLATE NOCASE)',
       whereArgs: <Object?>[pattern, pattern],
@@ -159,11 +116,11 @@ class SQLiteNoteDataSource implements NoteDataSource {
 
   @override
   Future<void> createNote(Note note) async {
-    final db = await _db;
-    _log.debug('createNote', note.id);
+    final database = await db;
+    logger.debug('createNote', note.id);
     try {
-      await db.insert(
-        _tableName,
+      await database.insert(
+        tableName,
         _noteToMap(note),
         conflictAlgorithm: ConflictAlgorithm.abort,
       );
@@ -177,12 +134,12 @@ class SQLiteNoteDataSource implements NoteDataSource {
 
   @override
   Future<void> updateNote(Note note) async {
-    final db = await _db;
-    _log.debug('updateNote', note.id);
+    final database = await db;
+    logger.debug('updateNote', note.id);
     final Note noteToUpdate = note.copyWith(updatedAt: DateTime.now());
 
-    final int updated = await db.update(
-      _tableName,
+    final int updated = await database.update(
+      tableName,
       _noteToMap(noteToUpdate),
       where: 'id = ? AND deleted_at IS NULL',
       whereArgs: <Object?>[note.id],
@@ -193,11 +150,11 @@ class SQLiteNoteDataSource implements NoteDataSource {
 
   @override
   Future<void> deleteNote(String noteId) async {
-    final db = await _db;
-    _log.debug('deleteNote (soft)', noteId);
+    final database = await db;
+    logger.debug('deleteNote (soft)', noteId);
 
-    final int deleted = await db.update(
-      _tableName,
+    final int deleted = await database.update(
+      tableName,
       <String, Object?>{
         'deleted_at': DateTime.now().millisecondsSinceEpoch,
         'updated_at': DateTime.now().millisecondsSinceEpoch,
