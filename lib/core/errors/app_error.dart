@@ -25,3 +25,31 @@ class TaskAlreadyExistsException extends TaskException {
 class TaskValidationException extends TaskException {
   const TaskValidationException(super.message);
 }
+
+/// Base exception for all domain-level note errors.
+class NoteException implements Exception {
+  const NoteException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => 'NoteException: $message';
+}
+
+/// Thrown when an operation targets a note that does not exist (or is
+/// soft-deleted).
+class NoteNotFoundException extends NoteException {
+  const NoteNotFoundException(String noteId)
+      : super('Note not found: $noteId');
+}
+
+/// Thrown when trying to create a note whose id already exists in the store.
+class NoteAlreadyExistsException extends NoteException {
+  const NoteAlreadyExistsException(String noteId)
+      : super('Note already exists: $noteId');
+}
+
+/// Thrown when a Note violates a domain invariant.
+class NoteValidationException extends NoteException {
+  const NoteValidationException(super.message);
+}
