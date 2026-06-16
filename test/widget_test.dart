@@ -18,13 +18,13 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
     await tester.pump();
 
-    expect(find.text('Tasks'), findsOneWidget);
+    expect(find.text('Tasks'), findsNWidgets(2));
 
     await tester.tap(find.byIcon(Icons.add));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextFormField).first, title);
-    await tester.tap(find.text('Guardar tarea'));
+    await tester.tap(find.text('Create Task'));
 
     for (int i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 100));

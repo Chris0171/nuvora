@@ -79,8 +79,8 @@ void main() {
       await _navigateToCreate(tester);
 
       expect(find.byType(TextFormField), findsNWidgets(2));
-      expect(find.text('Titulo'), findsOneWidget);
-      expect(find.text('Descripcion'), findsOneWidget);
+      expect(find.text('Title'), findsOneWidget);
+      expect(find.text('Description'), findsOneWidget);
     });
 
     testWidgets('shows validation error when title is empty', (tester) async {
@@ -89,10 +89,10 @@ void main() {
       await _navigateToCreate(tester);
 
       // Tap save without entering a title.
-      await tester.tap(find.text('Guardar tarea'));
+      await tester.tap(find.text('Create Task'));
       await tester.pumpAndSettle();
 
-      expect(find.text('El titulo es obligatorio'), findsOneWidget);
+      expect(find.text('Title is required'), findsOneWidget);
     });
 
     testWidgets('calls createTask with correct title', (tester) async {
@@ -103,7 +103,7 @@ void main() {
 
       await tester.enterText(
           find.byType(TextFormField).first, 'My new task');
-      await tester.tap(find.text('Guardar tarea'));
+      await tester.tap(find.text('Create Task'));
       await tester.pumpAndSettle();
 
       expect(repo.lastCreated?.title, 'My new task');
@@ -115,12 +115,12 @@ void main() {
       await _navigateToCreate(tester);
 
       await tester.enterText(find.byType(TextFormField).first, 'Test');
-      await tester.tap(find.text('Guardar tarea'));
+      await tester.tap(find.text('Create Task'));
       await tester.pumpAndSettle();
 
       // Should be back on the parent screen.
       expect(find.text('Go to Create'), findsOneWidget);
-      expect(find.text('Guardar tarea'), findsNothing);
+      expect(find.text('Create Task'), findsNothing);
     });
 
     testWidgets('shows SnackBar and stays on screen when createTask throws',
@@ -130,13 +130,13 @@ void main() {
       await _navigateToCreate(tester);
 
       await tester.enterText(find.byType(TextFormField).first, 'Bad task');
-      await tester.tap(find.text('Guardar tarea'));
+      await tester.tap(find.text('Create Task'));
       await tester.pump();
       await tester.pump();
 
-      expect(find.text('No se pudo guardar la tarea.'), findsOneWidget);
+      expect(find.text('Could not save task'), findsOneWidget);
       // Still on CreateTaskScreen – save button is visible.
-      expect(find.text('Guardar tarea'), findsOneWidget);
+      expect(find.text('Create Task'), findsOneWidget);
     });
 
     testWidgets('button is disabled while save is in progress', (tester) async {
@@ -147,7 +147,7 @@ void main() {
       await _navigateToCreate(tester);
 
       await tester.enterText(find.byType(TextFormField).first, 'Slow task');
-      await tester.tap(find.text('Guardar tarea'));
+      await tester.tap(find.text('Create Task'));
       await tester.pump(); // triggers setState(_isSaving = true)
 
       // Button onPressed should be null while saving.
@@ -166,7 +166,7 @@ void main() {
       await _navigateToCreate(tester);
 
       await tester.enterText(find.byType(TextFormField).first, 'Failing');
-      await tester.tap(find.text('Guardar tarea'));
+      await tester.tap(find.text('Create Task'));
       await tester.pump();
       await tester.pump(); // finally block fires
 

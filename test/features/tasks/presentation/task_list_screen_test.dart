@@ -119,7 +119,7 @@ void main() {
       final controller = TaskController(repository: repo);
       await tester.pumpWidget(_buildSubject(tasks: [], controller: controller));
       await tester.pumpAndSettle();
-      expect(find.text('No hay tareas todavia.'), findsOneWidget);
+      expect(find.text('No tasks yet'), findsOneWidget);
     });
 
     testWidgets('renders one TaskItem per task', (tester) async {
@@ -153,7 +153,7 @@ void main() {
     testWidgets('shows error widget when provider throws', (tester) async {
       await tester.pumpWidget(_buildError(Exception('DB error')));
       await tester.pumpAndSettle();
-      expect(find.textContaining('Error:'), findsOneWidget);
+      expect(find.text('Error loading tasks'), findsOneWidget);
     });
 
     testWidgets('calls deleteTask on controller when delete icon tapped',
@@ -165,7 +165,7 @@ void main() {
           .pumpWidget(_buildSubject(tasks: [task], controller: controller));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.tap(find.byIcon(Icons.close));
       await tester.pump();
       await tester.pump();
 
@@ -197,11 +197,11 @@ void main() {
           .pumpWidget(_buildSubject(tasks: [task], controller: controller));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.tap(find.byIcon(Icons.close));
       await tester.pump();
       await tester.pump();
 
-      expect(find.text('No se pudo eliminar la tarea.'), findsOneWidget);
+      expect(find.text('Could not delete task'), findsOneWidget);
     });
 
     testWidgets('shows SnackBar when updateTaskCompletion throws',
@@ -218,7 +218,7 @@ void main() {
       await tester.pump();
 
       expect(
-          find.text('No se pudo actualizar la tarea.'), findsOneWidget);
+          find.text('Could not update task'), findsOneWidget);
     });
   });
 }

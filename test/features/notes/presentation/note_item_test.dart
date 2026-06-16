@@ -34,7 +34,7 @@ void main() {
   testWidgets('calls onTap', (tester) async {
     bool called = false;
     await tester.pumpWidget(_app(_note(), onTap: () => called = true));
-    await tester.tap(find.byType(ListTile));
+    await tester.tap(find.byType(Card));
     await tester.pump();
     expect(called, isTrue);
   });
@@ -42,7 +42,7 @@ void main() {
   testWidgets('calls onDelete', (tester) async {
     bool called = false;
     await tester.pumpWidget(_app(_note(), onDelete: () => called = true));
-    await tester.tap(find.byIcon(Icons.delete_outline));
+    await tester.tap(find.byIcon(Icons.close));
     await tester.pump();
     expect(called, isTrue);
   });

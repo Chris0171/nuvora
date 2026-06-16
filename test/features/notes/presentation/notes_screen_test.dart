@@ -65,7 +65,7 @@ void main() {
     final controller = NoteController(repository: _FakeRepo([]));
     await tester.pumpWidget(_app(controller: controller, notes: []));
     await tester.pumpAndSettle();
-    expect(find.text('No hay notas todavia.'), findsOneWidget);
+    expect(find.text('No notes yet'), findsOneWidget);
   });
 
   testWidgets('renders list with ValueKey', (tester) async {
@@ -88,7 +88,7 @@ void main() {
     await tester.pumpWidget(_app(controller: controller, notes: repo.notes));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.delete_outline));
+    await tester.tap(find.byIcon(Icons.close));
     await tester.pump();
     await tester.pump();
 
@@ -102,11 +102,11 @@ void main() {
     await tester.pumpWidget(_app(controller: controller, notes: repo.notes));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.delete_outline));
+    await tester.tap(find.byIcon(Icons.close));
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('No se pudo eliminar la nota.'), findsOneWidget);
+    expect(find.text('Could not delete note'), findsOneWidget);
   });
 
   testWidgets('search field is rendered', (tester) async {
@@ -115,6 +115,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(TextField), findsOneWidget);
-    expect(find.text('Buscar por titulo o contenido'), findsOneWidget);
+    expect(find.text('Search notes...'), findsOneWidget);
   });
 }

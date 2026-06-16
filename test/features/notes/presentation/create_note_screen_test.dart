@@ -76,11 +76,11 @@ void main() {
     await tester.pumpWidget(_app(c));
     await _open(tester);
 
-    await tester.tap(find.text('Guardar nota'));
+    await tester.tap(find.text('Create Note'));
     await tester.pumpAndSettle();
 
-    expect(find.text('El titulo es obligatorio'), findsOneWidget);
-    expect(find.text('El contenido es obligatorio'), findsOneWidget);
+    expect(find.text('Title is required'), findsOneWidget);
+    expect(find.text('Content is required'), findsOneWidget);
   });
 
   testWidgets('creates note on valid form submit', (tester) async {
@@ -91,7 +91,7 @@ void main() {
 
     await tester.enterText(find.byType(TextFormField).first, 'My note');
     await tester.enterText(find.byType(TextFormField).last, 'My content');
-    await tester.tap(find.text('Guardar nota'));
+    await tester.tap(find.text('Create Note'));
     await tester.pumpAndSettle();
 
     expect(repo.lastCreated, isNotNull);
@@ -115,7 +115,7 @@ void main() {
 
     await tester.enterText(find.byType(TextFormField).first, 'New title');
     await tester.enterText(find.byType(TextFormField).last, 'New body');
-    await tester.tap(find.text('Actualizar nota'));
+    await tester.tap(find.text('Update Note'));
     await tester.pumpAndSettle();
 
     expect(repo.lastUpdated, isNotNull);
@@ -130,11 +130,11 @@ void main() {
 
     await tester.enterText(find.byType(TextFormField).first, 'My note');
     await tester.enterText(find.byType(TextFormField).last, 'My content');
-    await tester.tap(find.text('Guardar nota'));
+    await tester.tap(find.text('Create Note'));
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('No se pudo guardar la nota.'), findsOneWidget);
+    expect(find.text('Could not save note'), findsOneWidget);
   });
 
   testWidgets('disables button while save is in progress', (tester) async {
@@ -147,7 +147,7 @@ void main() {
     await tester.enterText(find.byType(TextFormField).first, 'X');
     await tester.enterText(find.byType(TextFormField).last, 'Y');
 
-    await tester.tap(find.text('Guardar nota'));
+    await tester.tap(find.text('Create Note'));
     await tester.pump();
 
     final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton).last);

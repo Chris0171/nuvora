@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nuvora/core/theme/app_design_system.dart';
 import 'package:nuvora/features/notes/application/controllers/note_provider.dart';
 import 'package:nuvora/features/notes/domain/entities/note.dart';
 
@@ -73,8 +74,8 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
 					SnackBar(
 						content: Text(
 							_isEdit
-								? 'No se pudo actualizar la nota.'
-								: 'No se pudo guardar la nota.',
+								? 'Could not update note'
+								: 'Could not save note',
 						),
 					),
 				);
@@ -87,53 +88,97 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
 	@override
 	Widget build(BuildContext context) {
 		return Scaffold(
-			appBar: AppBar(title: Text(_isEdit ? 'Editar nota' : 'Crear nota')),
-			body: Padding(
-				padding: const EdgeInsets.all(16),
-				child: Form(
-					key: _formKey,
-					child: Column(
-						children: [
-							TextFormField(
-								controller: _titleController,
-								decoration: const InputDecoration(labelText: 'Titulo'),
-								validator: (value) {
-									if (value == null || value.trim().isEmpty) {
-										return 'El titulo es obligatorio';
-									}
-									return null;
-								},
-							),
-							const SizedBox(height: 12),
-							TextFormField(
-								controller: _contentController,
-								maxLines: 5,
-								decoration: const InputDecoration(labelText: 'Contenido'),
-								validator: (value) {
-									if (value == null || value.trim().isEmpty) {
-										return 'El contenido es obligatorio';
-									}
-									return null;
-								},
-							),
-							const SizedBox(height: 20),
-							SizedBox(
-								width: double.infinity,
-								child: ElevatedButton(
-									onPressed: _isSaving ? null : _save,
-									child: _isSaving
-											? const SizedBox(
-													height: 20,
-													width: 20,
-													child: CircularProgressIndicator(strokeWidth: 2),
-												)
-											: Text(_isEdit ? 'Actualizar nota' : 'Guardar nota'),
+			appBar: AppBar(
+				title: Text(_isEdit ? 'Edit Note' : 'New Note'),
+				titleTextStyle: AppTypography.headlineLarge,
+			),
+			body: SingleChildScrollView(
+				child: Padding(
+					padding: const EdgeInsets.all(AppSpacing.lg),
+					child: Form(
+						key: _formKey,
+						child: Column(
+							crossAxisAlignment: CrossAxisAlignment.start,
+							children: [
+								// Title Field
+								Text(
+									'Title',
+									style: AppTypography.labelLarge.copyWith(
+										color: AppColors.textPrimary,
+									),
 								),
-							),
-						],
+								const SizedBox(height: AppSpacing.md),
+								TextFormField(
+									controller: _titleController,
+									decoration: InputDecoration(
+										hintText: 'Enter note title',
+										prefixIcon: const Icon(Icons.title, color: AppColors.primary),
+									),
+									style: AppTypography.bodyMedium,
+									validator: (value) {
+										if (value == null || value.trim().isEmpty) {
+											return 'Title is required';
+										}
+										return null;
+									},
+								),
+								const SizedBox(height: AppSpacing.xl),
+								// Content Field
+								Text(
+									'Content',
+									style: AppTypography.labelLarge.copyWith(
+										color: AppColors.textPrimary,
+									),
+								),
+								const SizedBox(height: AppSpacing.md),
+								TextFormField(
+									controller: _contentController,
+									minLines: 5,
+									maxLines: 15,
+									decoration: InputDecoration(
+										hintText: 'Write your note...',
+										prefixIcon: const Icon(Icons.description, color: AppColors.primary),
+										alignLabelWithHint: true,
+									),
+									style: AppTypography.bodyMedium,
+									validator: (value) {
+										if (value == null || value.trim().isEmpty) {
+											return 'Content is required';
+										}
+										return null;
+									},
+								),
+								const SizedBox(height: AppSpacing.xxl),
+								// Save Button
+								SizedBox(
+									width: double.infinity,
+									height: 56,
+									child: ElevatedButton(
+										onPressed: _isSaving ? null : _save,
+										style: ElevatedButton.styleFrom(
+											elevation: _isSaving ? 0 : AppElevation.sm,
+										),
+										child: _isSaving
+												? const SizedBox(
+													height: 24,
+													width: 24,
+													child: CircularProgressIndicator(
+														strokeWidth: 2.5,
+														valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+													),
+												)
+												: Text(
+													_isEdit ? 'Update Note' : 'Create Note',
+													style: AppTypography.labelLarge,
+												),
+									),
+								),
+							],
+						),
 					),
 				),
 			),
 		);
 	}
 }
+

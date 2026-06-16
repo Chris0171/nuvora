@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:nuvora/features/tasks/presentation/screens/home_screen.dart';
+import 'package:nuvora/core/navigation/main_shell.dart';
+import 'package:nuvora/core/theme/app_theme.dart';
 
 void main() {
   runApp(const ProviderScope(child: MyApp()));
@@ -12,11 +13,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Nuvora Tasks',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-      ),
-      home: const HomeScreen(),
+      title: 'Nuvora',
+      theme: buildAppTheme(),
+      home: const MainShell(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
