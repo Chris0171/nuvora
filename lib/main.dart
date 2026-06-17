@@ -15,7 +15,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Nuvora',
       theme: buildAppTheme(),
-      home: const MainShell(),
+      darkTheme: buildDarkAppTheme(),
+      themeMode: ThemeMode.system,
+      home: const AppShell(),
       debugShowCheckedModeBanner: false,
     );
   }
