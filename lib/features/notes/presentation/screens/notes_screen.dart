@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nuvora/core/navigation/app_page_route.dart';
 import 'package:nuvora/core/productivity/productivity_analyzer.dart';
 import 'package:nuvora/core/theme/app_design_system.dart';
 import 'package:nuvora/features/notes/application/controllers/note_provider.dart';
@@ -87,7 +88,7 @@ class NotesScreen extends ConsumerWidget {
 			floatingActionButton: FloatingActionButton.extended(
 				onPressed: () async {
 					await Navigator.of(context).push(
-						MaterialPageRoute<void>(
+						AppPageRoute<void>(
 							builder: (_) => const CreateNoteScreen(),
 						),
 					);
@@ -222,11 +223,20 @@ class _NotesBody extends ConsumerWidget {
 						),
 						const SizedBox(height: AppSpacing.lg),
 						Text(
-							hasSearch ? 'No notes found' : 'No notes yet',
+							hasSearch ? 'No notes found' : 'Capture your first idea',
 							style: AppTypography.headlineMedium,
 							textAlign: TextAlign.center,
 						),
 						const SizedBox(height: AppSpacing.md),
+						if (!hasSearch)
+							Text(
+								'No notes yet',
+								style: AppTypography.bodyMedium.copyWith(
+									color: AppColors.textSecondary,
+								),
+								textAlign: TextAlign.center,
+							),
+						if (!hasSearch) const SizedBox(height: AppSpacing.xs),
 						Text(
 							hasSearch ? 'Try adjusting your search' : 'Create your first note',
 							style: AppTypography.bodyMedium.copyWith(
@@ -234,6 +244,18 @@ class _NotesBody extends ConsumerWidget {
 							),
 							textAlign: TextAlign.center,
 						),
+						const SizedBox(height: AppSpacing.lg),
+						if (!hasSearch)
+							ElevatedButton.icon(
+								onPressed: () async {
+									await Navigator.of(context).push(
+										AppPageRoute<void>(builder: (_) => const CreateNoteScreen()),
+									);
+									ref.invalidate(notesProvider);
+								},
+								icon: const Icon(Icons.lightbulb_outline),
+								label: const Text('Create your first note'),
+							),
 						const SizedBox(height: 60),
 					],
 				),

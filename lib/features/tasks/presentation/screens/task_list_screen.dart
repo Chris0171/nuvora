@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nuvora/core/navigation/app_page_route.dart';
 import 'package:nuvora/core/constants/priority.dart';
 import 'package:nuvora/core/productivity/productivity_analyzer.dart';
 import 'package:nuvora/core/theme/app_design_system.dart';
 import 'package:nuvora/features/tasks/application/controllers/task_provider.dart';
 import 'package:nuvora/features/tasks/domain/entities/task.dart';
+import 'package:nuvora/features/tasks/presentation/screens/create_task_screen.dart';
 import 'package:nuvora/features/tasks/presentation/widgets/task_item.dart';
 
 class TaskListScreen extends ConsumerWidget {
@@ -42,17 +44,37 @@ class TaskListScreen extends ConsumerWidget {
 								),
 								const SizedBox(height: AppSpacing.lg),
 								const Text(
-									'No tasks yet',
+									'Start planning your day',
 									style: AppTypography.headlineMedium,
 									textAlign: TextAlign.center,
 								),
 								const SizedBox(height: AppSpacing.md),
+								Text(
+									'No tasks yet',
+									style: AppTypography.bodyMedium.copyWith(
+										color: AppColors.textSecondary,
+									),
+									textAlign: TextAlign.center,
+								),
+								const SizedBox(height: AppSpacing.xs),
 								Text(
 									'Create your first task to get started',
 									style: AppTypography.bodyMedium.copyWith(
 										color: AppColors.textSecondary,
 									),
 									textAlign: TextAlign.center,
+								),
+								const SizedBox(height: AppSpacing.lg),
+								ElevatedButton.icon(
+									onPressed: () {
+										Navigator.of(context).push(
+											AppPageRoute<void>(
+												builder: (_) => const CreateTaskScreen(),
+											),
+										);
+									},
+									icon: const Icon(Icons.add),
+									label: const Text('Create your first task'),
 								),
 								const SizedBox(height: 60),
 							],

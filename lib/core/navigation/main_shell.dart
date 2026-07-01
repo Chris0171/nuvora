@@ -64,7 +64,8 @@ class _AppShellState extends State<AppShell> {
             AppNavigationBar(
               selectedIndex: _selectedIndex,
               onDestinationSelected: (index) {
-                setState(() => _selectedIndex = index);
+					if (index == _selectedIndex) return;
+					setState(() => _selectedIndex = index);
               },
               destinations: const [
                 AppNavigationDestination(
@@ -109,14 +110,14 @@ class _AnimatedViewport extends StatelessWidget {
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
       key: ValueKey<int>(selectedIndex),
-      tween: Tween<double>(begin: 0.98, end: 1.0),
-      duration: const Duration(milliseconds: 260),
+      tween: Tween<double>(begin: 0.975, end: 1.0),
+      duration: const Duration(milliseconds: 320),
       curve: Curves.easeOutCubic,
       builder: (context, value, child) {
         return Opacity(
-          opacity: 0.92 + (value - 0.98) * 4,
+          opacity: 0.88 + (value - 0.975) * 4.8,
           child: Transform.translate(
-            offset: Offset(0, (1 - value) * 12),
+            offset: Offset(0, (1 - value) * 16),
             child: Transform.scale(
               scale: value,
               child: child,

@@ -18,6 +18,13 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
     await tester.pump();
 
+    if (find.text('Welcome to Nuvora').evaluate().isNotEmpty) {
+      await tester.tap(find.text('Skip'));
+      for (int i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 80));
+      }
+    }
+
     expect(find.text('Tasks'), findsNWidgets(2));
 
     await tester.tap(find.byIcon(Icons.add));

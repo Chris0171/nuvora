@@ -34,6 +34,11 @@ class SettingsScreen extends ConsumerWidget {
 					),
 					children: [
 						const Text('Settings', style: AppTypography.displaySmall),
+						const SizedBox(height: AppSpacing.sm),
+						Text(
+							'Configure your product experience',
+							style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
+						),
 						const SizedBox(height: AppSpacing.lg),
 						const _ProfileCard(),
 						const SizedBox(height: AppSpacing.lg),
@@ -65,42 +70,54 @@ class _SettingsContent extends StatelessWidget {
 		return Column(
 			children: [
 				_SettingsGroup(
-					title: 'Your productivity system',
+					title: 'Account',
 					items: [
-						_SettingsItemData('Tasks managed: $tasksManaged', Icons.task_alt),
-						_SettingsItemData('Notes stored: $notesStored', Icons.note_alt_outlined),
-						_SettingsItemData(
-							'Completion percentage: $completionPercentage%',
-							Icons.bar_chart_outlined,
-						),
+						const _SettingsItemData('Profile', Icons.person_outline),
+						const _SettingsItemData('Plan & billing', Icons.credit_card_outlined),
+						const _SettingsItemData('Security', Icons.lock_outline),
 					],
 				),
-						SizedBox(height: AppSpacing.xl),
+				const SizedBox(height: AppSpacing.lg),
 				_SettingsGroup(
 					title: 'Appearance',
 					items: const [
 						_SettingsItemData('Theme', Icons.dark_mode_outlined),
 						_SettingsItemData('Typography', Icons.text_fields_outlined),
+						_SettingsItemData('Layout density', Icons.space_dashboard_outlined),
 					],
 				),
 				const SizedBox(height: AppSpacing.lg),
 				_SettingsGroup(
-					title: 'Account',
+					title: 'Notifications',
 					items: const [
-						_SettingsItemData('Profile', Icons.person_outline),
-						_SettingsItemData('Notifications', Icons.notifications_none),
+						_SettingsItemData('Push alerts', Icons.notifications_none),
+						_SettingsItemData('Reminder cadence', Icons.alarm_outlined),
+						_SettingsItemData('Digest summary', Icons.summarize_outlined),
 					],
 				),
 				const SizedBox(height: AppSpacing.lg),
 				_SettingsGroup(
-					title: 'Data',
+					title: 'Data & Backup',
 					items: const [
-						_SettingsItemData('Backup', Icons.cloud_outlined),
-						_SettingsItemData('Export', Icons.download_outlined),
+						_SettingsItemData('Auto backup', Icons.cloud_outlined),
+						_SettingsItemData('Export workspace', Icons.download_outlined),
+						_SettingsItemData('Storage usage', Icons.storage_outlined),
+					],
+				),
+				const SizedBox(height: AppSpacing.lg),
+				_SettingsGroup(
+					title: 'About Nuvora',
+					items: [
+						const _SettingsItemData('Version', Icons.info_outline),
+						const _SettingsItemData('Help center', Icons.help_outline),
+						const _SettingsItemData('Privacy policy', Icons.policy_outlined),
+						_SettingsItemData('Tasks managed: $tasksManaged', Icons.task_alt),
+						_SettingsItemData('Notes stored: $notesStored', Icons.note_alt_outlined),
+						_SettingsItemData('Completion: $completionPercentage%', Icons.bar_chart_outlined),
 					],
 				),
 				const SizedBox(height: AppSpacing.xl),
-				const _GoPremiumCard(),
+				const _NuvoraProCard(),
 			],
 		);
  	}
@@ -189,8 +206,8 @@ class _SettingsRow extends StatelessWidget {
 	}
 }
 
-class _GoPremiumCard extends StatelessWidget {
-	const _GoPremiumCard();
+class _NuvoraProCard extends StatelessWidget {
+	const _NuvoraProCard();
 
 	@override
 	Widget build(BuildContext context) {
@@ -199,7 +216,7 @@ class _GoPremiumCard extends StatelessWidget {
 			decoration: BoxDecoration(
 				borderRadius: BorderRadius.circular(AppRadius.xl),
 				gradient: const LinearGradient(
-					colors: [Color(0xFF312E81), Color(0xFF1E1B4B)],
+					colors: [Color(0xFF0F172A), Color(0xFF1D4ED8)],
 					begin: Alignment.topLeft,
 					end: Alignment.bottomRight,
 				),
@@ -208,7 +225,7 @@ class _GoPremiumCard extends StatelessWidget {
 				crossAxisAlignment: CrossAxisAlignment.start,
 				children: [
 					Text(
-						'Pro Features',
+						'Nuvora Pro',
 						style: TextStyle(
 							color: Colors.white,
 							fontSize: 18,
@@ -216,13 +233,11 @@ class _GoPremiumCard extends StatelessWidget {
 						),
 					),
 					SizedBox(height: AppSpacing.sm),
-					Text('AI prioritization', style: TextStyle(color: Colors.white70)),
-					SizedBox(height: AppSpacing.xs),
-					Text('Smart note organization', style: TextStyle(color: Colors.white70)),
-					SizedBox(height: AppSpacing.xs),
-					Text('Cross-device sync', style: TextStyle(color: Colors.white70)),
+					Text('Unlimited productivity insights', style: TextStyle(color: Colors.white70)),
 					SizedBox(height: AppSpacing.xs),
 					Text('Advanced analytics', style: TextStyle(color: Colors.white70)),
+					SizedBox(height: AppSpacing.xs),
+					Text('Smart reminders', style: TextStyle(color: Colors.white70)),
 				],
 			),
 		);
