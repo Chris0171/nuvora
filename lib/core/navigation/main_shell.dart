@@ -5,6 +5,8 @@ import 'package:nuvora/features/insights/presentation/screens/insights_screen.da
 import 'package:nuvora/features/notes/presentation/screens/notes_screen.dart';
 import 'package:nuvora/features/settings/presentation/screens/settings_screen.dart';
 import 'package:nuvora/features/tasks/presentation/screens/tasks_screen.dart';
+import 'package:nuvora/core/widgets/app_navigation_bar.dart';
+import 'package:nuvora/core/widgets/shell_container.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -36,41 +38,93 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_selectedIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) {
-          setState(() => _selectedIndex = index);
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.check_circle_outline),
-            selectedIcon: Icon(Icons.check_circle),
-            label: 'Tasks',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.note_outlined),
-            selectedIcon: Icon(Icons.note),
-            label: 'Notes',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.insights_outlined),
-            selectedIcon: Icon(Icons.insights),
-            label: 'Insights',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
+    return ShellContainer(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        extendBody: true,
+        body: Column(
+          children: [
+            Expanded(
+              child: _AnimatedViewport(
+                selectedIndex: _selectedIndex,
+                child: IndexedStack(
+                  index: _selectedIndex,
+                  children: List.generate(_screens.length, (index) {
+                    return HeroMode(
+                      enabled: index == _selectedIndex,
+                      child: TickerMode(
+                        enabled: index == _selectedIndex,
+                        child: _screens[index],
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ),
+            AppNavigationBar(
+              selectedIndex: _selectedIndex,
+              onDestinationSelected: (index) {
+                setState(() => _selectedIndex = index);
+              },
+              destinations: const [
+                AppNavigationDestination(
+                  icon: Icons.home_outlined,
+                  label: 'Home',
+                ),
+                AppNavigationDestination(
+                  icon: Icons.check_circle_outline,
+                  label: 'Tasks',
+                ),
+                AppNavigationDestination(
+                  icon: Icons.note_outlined,
+                  label: 'Notes',
+                ),
+                AppNavigationDestination(
+                  icon: Icons.insights_outlined,
+                  label: 'Insights',
+                ),
+                AppNavigationDestination(
+                  icon: Icons.settings_outlined,
+                  label: 'Settings',
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
+    );
+  }
+}
+
+class _AnimatedViewport extends StatelessWidget {
+  const _AnimatedViewport({
+    required this.selectedIndex,
+    required this.child,
+  });
+
+  final int selectedIndex;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      key: ValueKey<int>(selectedIndex),
+      tween: Tween<double>(begin: 0.98, end: 1.0),
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: 0.92 + (value - 0.98) * 4,
+          child: Transform.translate(
+            offset: Offset(0, (1 - value) * 12),
+            child: Transform.scale(
+              scale: value,
+              child: child,
+            ),
+          ),
+        );
+      },
+      child: child,
     );
   }
 }

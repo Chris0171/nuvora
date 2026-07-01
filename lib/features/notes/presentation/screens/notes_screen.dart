@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nuvora/core/productivity/productivity_analyzer.dart';
 import 'package:nuvora/core/theme/app_design_system.dart';
 import 'package:nuvora/features/notes/application/controllers/note_provider.dart';
 import 'package:nuvora/features/notes/domain/entities/note.dart';
@@ -13,6 +14,15 @@ class NotesScreen extends ConsumerWidget {
 	Widget build(BuildContext context, WidgetRef ref) {
 		final notesAsync = ref.watch(notesProvider);
 		final searchQuery = ref.watch(noteSearchQueryProvider);
+		final notesState = notesAsync.when(
+			data: (notes) => _NotesBody(
+				key: ValueKey('notes-data-${notes.length}-$searchQuery'),
+				notes: notes,
+				hasSearch: searchQuery.isNotEmpty,
+			),
+			loading: () => const _LoadingState(key: ValueKey('notes-loading')),
+			error: (error, _) => _ErrorState(key: const ValueKey('notes-error'), error: error),
+		);
 
 		return Scaffold(
 			body: CustomScrollView(
@@ -23,7 +33,7 @@ class NotesScreen extends ConsumerWidget {
 						backgroundColor: Colors.transparent,
 						title: const Text('Notes'),
 						bottom: PreferredSize(
-							preferredSize: const Size.fromHeight(70),
+							preferredSize: const Size.fromHeight(88),
 							child: Padding(
 								padding: const EdgeInsets.fromLTRB(
 									AppSpacing.lg,
@@ -31,14 +41,21 @@ class NotesScreen extends ConsumerWidget {
 									AppSpacing.lg,
 									AppSpacing.lg,
 								),
-								child: TextField(
-									onChanged: (value) =>
-										ref.read(noteSearchQueryProvider.notifier).state = value,
-									decoration: InputDecoration(
-										hintText: 'Search notes...',
-										prefixIcon: const Icon(Icons.search),
-										border: OutlineInputBorder(
-											borderRadius: BorderRadius.circular(AppRadius.lg),
+								child: Container(
+									decoration: BoxDecoration(
+										color: AppColors.surface,
+										borderRadius: BorderRadius.circular(AppRadius.xl),
+										border: Border.all(color: AppColors.border),
+									),
+									child: TextField(
+										onChanged: (value) =>
+											ref.read(noteSearchQueryProvider.notifier).state = value,
+										decoration: InputDecoration(
+											hintText: 'Search notes...',
+											prefixIcon: const Icon(Icons.search),
+											border: OutlineInputBorder(
+												borderRadius: BorderRadius.circular(AppRadius.xl),
+											),
 										),
 									),
 								),
@@ -46,13 +63,23 @@ class NotesScreen extends ConsumerWidget {
 						),
 					),
 					SliverToBoxAdapter(
-						child: notesAsync.when(
-							data: (notes) => _NotesBody(
-								notes: notes,
-								hasSearch: searchQuery.isNotEmpty,
-							),
-							loading: () => const _LoadingState(),
-							error: (error, _) => _ErrorState(error: error),
+						child: AnimatedSwitcher(
+							duration: const Duration(milliseconds: 320),
+							switchInCurve: Curves.easeOutCubic,
+							switchOutCurve: Curves.easeInCubic,
+							transitionBuilder: (child, animation) {
+								return FadeTransition(
+									opacity: animation,
+									child: SlideTransition(
+										position: Tween<Offset>(
+											begin: const Offset(0, 0.03),
+											end: Offset.zero,
+										).animate(animation),
+										child: child,
+									),
+								);
+							},
+							child: notesState,
 						),
 					),
 				],
@@ -74,7 +101,7 @@ class NotesScreen extends ConsumerWidget {
 }
 
 class _LoadingState extends StatelessWidget {
-	const _LoadingState();
+	const _LoadingState({super.key});
 
 	@override
 	Widget build(BuildContext context) {
@@ -85,8 +112,22 @@ class _LoadingState extends StatelessWidget {
 					mainAxisAlignment: MainAxisAlignment.center,
 					children: [
 						const SizedBox(height: 60),
-						const CircularProgressIndicator(
-							color: AppColors.primary,
+						Container(
+							width: 72,
+							height: 72,
+							decoration: BoxDecoration(
+								gradient: const LinearGradient(
+									colors: [Color(0xFFE0F2FE), Color(0xFFF8FAFC)],
+									begin: Alignment.topLeft,
+									end: Alignment.bottomRight,
+								),
+								borderRadius: BorderRadius.circular(AppRadius.xl),
+							),
+							child: const Center(
+								child: CircularProgressIndicator(
+									color: AppColors.primary,
+								),
+							),
 						),
 						const SizedBox(height: AppSpacing.lg),
 						Text(
@@ -104,7 +145,7 @@ class _LoadingState extends StatelessWidget {
 }
 
 class _ErrorState extends StatelessWidget {
-	const _ErrorState({required this.error});
+	const _ErrorState({super.key, required this.error});
 
 	final Object error;
 
@@ -144,6 +185,7 @@ class _ErrorState extends StatelessWidget {
 
 class _NotesBody extends ConsumerWidget {
 	const _NotesBody({
+		super.key,
 		required this.notes,
 		required this.hasSearch,
 	});
@@ -155,21 +197,26 @@ class _NotesBody extends ConsumerWidget {
 	Widget build(BuildContext context, WidgetRef ref) {
 		if (notes.isEmpty) {
 			return Padding(
+				key: ValueKey('notes-empty-$hasSearch'),
 				padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
 				child: Column(
 					mainAxisAlignment: MainAxisAlignment.center,
 					children: [
 						const SizedBox(height: 60),
 						Container(
-							width: 80,
-							height: 80,
+							width: 84,
+							height: 84,
 							decoration: BoxDecoration(
-								color: AppColors.primaryLight,
+								gradient: const LinearGradient(
+									colors: [Color(0xFFE0F2FE), Color(0xFFF8FAFC)],
+									begin: Alignment.topLeft,
+									end: Alignment.bottomRight,
+								),
 								borderRadius: BorderRadius.circular(AppRadius.xl),
 							),
 							child: const Icon(
 								Icons.note_outlined,
-								size: 40,
+								size: 42,
 								color: AppColors.primary,
 							),
 						),
@@ -193,39 +240,203 @@ class _NotesBody extends ConsumerWidget {
 			);
 		}
 
+		final pinnedNotes = notes.where((note) => note.isPinned).toList();
+		final recentNotes = [...notes]..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+		final suggestedReviewCount = recentNotes.take(3).length;
+		final recentCount = ProductivityAnalyzer.getRecentNotesCount(notes);
+
 		return Padding(
+			key: const ValueKey('notes-content'),
 			padding: const EdgeInsets.symmetric(
 				horizontal: AppSpacing.lg,
 				vertical: AppSpacing.md,
 			),
-			child: ListView.builder(
-				shrinkWrap: true,
-				physics: const NeverScrollableScrollPhysics(),
-				itemCount: notes.length,
-				itemBuilder: (context, index) {
-					final note = notes[index];
-					return Padding(
-						padding: const EdgeInsets.only(bottom: AppSpacing.md),
-						child: NoteItem(
-							key: ValueKey(note.id),
-							note: note,
-							onDelete: () async {
-								try {
-									await ref.read(noteControllerProvider).deleteNote(note.id);
-									ref.invalidate(notesProvider);
-								} catch (_) {
-									if (context.mounted) {
-										ScaffoldMessenger.of(context).showSnackBar(
-											const SnackBar(
-												content: Text('Could not delete note'),
-											),
-										);
-									}
-								}
+			child: Column(
+				crossAxisAlignment: CrossAxisAlignment.start,
+				children: [
+					Container(
+						width: double.infinity,
+						padding: const EdgeInsets.all(AppSpacing.lg),
+						decoration: BoxDecoration(
+							color: AppColors.surface,
+							borderRadius: BorderRadius.circular(AppRadius.xl),
+							border: Border.all(color: AppColors.border),
+						),
+						child: Column(
+							crossAxisAlignment: CrossAxisAlignment.start,
+							children: [
+								const Text('Knowledge summary', style: AppTypography.headlineMedium),
+								const SizedBox(height: AppSpacing.md),
+								_SummaryRow(label: 'You have notes', value: '${notes.length}'),
+								const SizedBox(height: AppSpacing.sm),
+								_SummaryRow(label: 'Pinned ideas', value: '${pinnedNotes.length}'),
+								const SizedBox(height: AppSpacing.sm),
+								_SummaryRow(label: 'Created recently', value: '$recentCount'),
+							],
+						),
+					),
+					const SizedBox(height: AppSpacing.xl),
+					if (pinnedNotes.isNotEmpty) ...[
+						const _SectionHeader(title: 'Pinned notes', icon: Icons.push_pin_outlined),
+						const SizedBox(height: AppSpacing.md),
+						GridView.builder(
+							shrinkWrap: true,
+							physics: const NeverScrollableScrollPhysics(),
+							gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+								crossAxisCount: 2,
+								crossAxisSpacing: AppSpacing.md,
+								mainAxisSpacing: AppSpacing.md,
+								childAspectRatio: 1.15,
+							),
+							itemCount: pinnedNotes.length,
+							itemBuilder: (context, index) {
+								final note = pinnedNotes[index];
+								return _PinnedNoteCard(
+									note: note,
+									onDelete: () => _deleteNote(context, ref, note.id),
+								);
 							},
 						),
-					);
-				},
+						const SizedBox(height: AppSpacing.xl),
+					],
+					const _SectionHeader(title: 'Recent notes', icon: Icons.history),
+					const SizedBox(height: AppSpacing.md),
+					...recentNotes.where((note) => !note.isPinned).map((note) {
+						return Padding(
+							padding: const EdgeInsets.only(bottom: AppSpacing.md),
+							child: NoteItem(
+								key: ValueKey(note.id),
+								note: note,
+								onDelete: () => _deleteNote(context, ref, note.id),
+							),
+						);
+					}),
+					const SizedBox(height: AppSpacing.lg),
+					const _SectionHeader(
+						title: 'Suggested review',
+						icon: Icons.lightbulb_outline,
+					),
+					const SizedBox(height: AppSpacing.md),
+					Container(
+						width: double.infinity,
+						padding: const EdgeInsets.all(AppSpacing.md),
+						decoration: BoxDecoration(
+							color: AppColors.surfaceSecondary,
+							borderRadius: BorderRadius.circular(AppRadius.lg),
+						),
+						child: Text(
+							'Review $suggestedReviewCount recent notes to keep ideas fresh.',
+							style: AppTypography.bodySmall.copyWith(
+								color: AppColors.textSecondary,
+							),
+						),
+					),
+				],
+			),
+		);
+	}
+
+	Future<void> _deleteNote(BuildContext context, WidgetRef ref, String id) async {
+		try {
+			await ref.read(noteControllerProvider).deleteNote(id);
+			ref.invalidate(notesProvider);
+		} catch (_) {
+			if (context.mounted) {
+				ScaffoldMessenger.of(context).showSnackBar(
+					const SnackBar(content: Text('Could not delete note')),
+				);
+			}
+		}
+	}
+}
+
+class _SummaryRow extends StatelessWidget {
+	const _SummaryRow({required this.label, required this.value});
+
+	final String label;
+	final String value;
+
+	@override
+	Widget build(BuildContext context) {
+		return Row(
+			children: [
+				Text(
+					label,
+					style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
+				),
+				const Spacer(),
+				Text(value, style: AppTypography.labelLarge),
+			],
+		);
+	}
+}
+
+
+class _SectionHeader extends StatelessWidget {
+	const _SectionHeader({required this.title, required this.icon});
+
+	final String title;
+	final IconData icon;
+
+	@override
+	Widget build(BuildContext context) {
+		return Row(
+			children: [
+				Icon(icon, size: 18, color: AppColors.primary),
+				const SizedBox(width: AppSpacing.sm),
+				Text(title, style: AppTypography.headlineSmall),
+			],
+		);
+	}
+}
+
+class _PinnedNoteCard extends StatelessWidget {
+	const _PinnedNoteCard({
+		required this.note,
+		required this.onDelete,
+	});
+
+	final Note note;
+	final VoidCallback onDelete;
+
+	@override
+	Widget build(BuildContext context) {
+		return Container(
+			padding: const EdgeInsets.all(AppSpacing.md),
+			decoration: BoxDecoration(
+				color: AppColors.surface,
+				borderRadius: BorderRadius.circular(AppRadius.lg),
+				border: Border.all(color: AppColors.border),
+			),
+			child: Column(
+				crossAxisAlignment: CrossAxisAlignment.start,
+				children: [
+					Row(
+						children: [
+							const Icon(Icons.push_pin, size: 16, color: AppColors.warning),
+							const Spacer(),
+							IconButton(
+								onPressed: onDelete,
+								icon: const Icon(Icons.close, size: 18),
+							),
+						],
+					),
+					Text(
+						note.title,
+						maxLines: 2,
+						overflow: TextOverflow.ellipsis,
+						style: AppTypography.labelLarge,
+					),
+					const SizedBox(height: AppSpacing.sm),
+					Expanded(
+						child: Text(
+							note.content,
+							maxLines: 4,
+							overflow: TextOverflow.ellipsis,
+							style: AppTypography.bodySmall,
+						),
+					),
+				],
 			),
 		);
 	}

@@ -15,9 +15,48 @@ class HomeScreen extends StatelessWidget {
 						floating: true,
 						elevation: 0,
 						backgroundColor: Colors.transparent,
-						title: Text(
-							'Tasks',
-							style: AppTypography.displaySmall,
+						title: const Text('Tasks'),
+						bottom: PreferredSize(
+							preferredSize: const Size.fromHeight(98),
+							child: Padding(
+								padding: const EdgeInsets.fromLTRB(
+									AppSpacing.lg,
+									0,
+									AppSpacing.lg,
+									AppSpacing.lg,
+								),
+								child: Container(
+									width: double.infinity,
+									padding: const EdgeInsets.all(AppSpacing.lg),
+									decoration: BoxDecoration(
+										gradient: const LinearGradient(
+											colors: [Color(0xFFEEF2FF), Color(0xFFE0E7FF)],
+										),
+										borderRadius: BorderRadius.circular(AppRadius.xl),
+									),
+									child: Row(
+										children: [
+											const Icon(
+												Icons.today_outlined,
+												color: AppColors.primary,
+											),
+											const SizedBox(width: AppSpacing.md),
+											Column(
+												crossAxisAlignment: CrossAxisAlignment.start,
+												children: [
+													const Text('Today', style: AppTypography.headlineMedium),
+													Text(
+														'Plan priorities and keep momentum',
+														style: AppTypography.bodySmall.copyWith(
+															color: AppColors.textSecondary,
+														),
+													),
+												],
+											),
+										],
+									),
+								),
+							),
 						),
 					),
 					const SliverToBoxAdapter(
@@ -26,6 +65,9 @@ class HomeScreen extends StatelessWidget {
 				],
 			),
 			floatingActionButton: FloatingActionButton.extended(
+				backgroundColor: AppColors.primary,
+				foregroundColor: Colors.white,
+				elevation: AppElevation.lg,
 				onPressed: () async {
 					await Navigator.of(context).push(
 						MaterialPageRoute<void>(
