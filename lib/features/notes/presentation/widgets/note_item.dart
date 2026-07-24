@@ -42,6 +42,7 @@ class _NoteItemState extends State<NoteItem> {
 	@override
 	Widget build(BuildContext context) {
 		final contentLines = widget.note.content.length > 140 ? 4 : 3;
+		final dateLabel = _formatDate(widget.note.createdAt);
 
 		return AnimatedScale(
 			duration: const Duration(milliseconds: 140),
@@ -54,9 +55,9 @@ class _NoteItemState extends State<NoteItem> {
 					borderRadius: BorderRadius.circular(AppRadius.lg),
 					boxShadow: [
 						BoxShadow(
-							color: Colors.black.withValues(alpha: _pressed ? 0.1 : 0.05),
-							blurRadius: _pressed ? 18 : 9,
-							offset: Offset(0, _pressed ? 10 : 5),
+							color: Colors.black.withValues(alpha: _pressed ? 0.08 : 0.04),
+							blurRadius: _pressed ? 16 : 8,
+							offset: Offset(0, _pressed ? 8 : 4),
 						),
 					],
 				),
@@ -83,47 +84,31 @@ class _NoteItemState extends State<NoteItem> {
 										Row(
 											crossAxisAlignment: CrossAxisAlignment.start,
 											children: [
-												Container(
-													padding: const EdgeInsets.symmetric(
-														horizontal: AppSpacing.sm,
-														vertical: AppSpacing.xs,
-													),
-													decoration: BoxDecoration(
-														color: AppColors.surfaceSecondary,
-														borderRadius: BorderRadius.circular(AppRadius.full),
-													),
+												Expanded(
 													child: Text(
-														_formatDate(widget.note.createdAt),
-														style: AppTypography.labelSmall.copyWith(
-															color: AppColors.textSecondary,
-														),
+														widget.note.title,
+														style: AppTypography.headlineMedium.copyWith(height: 1.3),
+														maxLines: 2,
+														overflow: TextOverflow.ellipsis,
 													),
 												),
-												const Spacer(),
+												const SizedBox(width: AppSpacing.sm),
 												if (widget.note.isPinned)
-													Container(
-														margin: const EdgeInsets.only(right: AppSpacing.sm),
-														padding: const EdgeInsets.symmetric(
-															horizontal: AppSpacing.sm,
-															vertical: AppSpacing.xs,
-														),
-														decoration: BoxDecoration(
-															color: AppColors.warning.withValues(alpha: 0.18),
-															borderRadius: BorderRadius.circular(AppRadius.full),
-														),
-														child: Row(
-															mainAxisSize: MainAxisSize.min,
-															children: [
-																const Icon(Icons.push_pin, size: 14, color: AppColors.warning),
-																const SizedBox(width: 4),
-																Text(
-																	'Pinned',
-																	style: AppTypography.labelSmall.copyWith(
-																		color: AppColors.warning,
-																		fontWeight: FontWeight.w700,
-																	),
-																),
-															],
+													AnimatedOpacity(
+														duration: const Duration(milliseconds: 180),
+														opacity: 1,
+														child: Container(
+															margin: const EdgeInsets.only(right: AppSpacing.xs),
+															padding: const EdgeInsets.all(AppSpacing.xs),
+															decoration: BoxDecoration(
+																color: AppColors.surfaceSecondary,
+																borderRadius: BorderRadius.circular(AppRadius.full),
+															),
+															child: const Icon(
+																Icons.push_pin,
+																size: 14,
+																color: AppColors.textSecondary,
+															),
 														),
 													),
 												IconButton(
@@ -136,22 +121,32 @@ class _NoteItemState extends State<NoteItem> {
 												),
 											],
 										),
-										const SizedBox(height: AppSpacing.sm),
-										Text(
-											widget.note.title,
-											style: AppTypography.headlineSmall,
-											maxLines: 2,
-											overflow: TextOverflow.ellipsis,
-										),
-										const SizedBox(height: AppSpacing.sm),
+										const SizedBox(height: AppSpacing.md),
 										Text(
 											widget.note.content,
-											style: AppTypography.bodySmall.copyWith(
+											style: AppTypography.bodyMedium.copyWith(
 												color: AppColors.textSecondary,
-												height: 1.5,
+												height: 1.45,
 											),
 											maxLines: contentLines,
 											overflow: TextOverflow.ellipsis,
+										),
+										const SizedBox(height: AppSpacing.md),
+										Container(
+											padding: const EdgeInsets.symmetric(
+												horizontal: AppSpacing.sm,
+												vertical: AppSpacing.xs,
+											),
+											decoration: BoxDecoration(
+												color: AppColors.surfaceSecondary,
+												borderRadius: BorderRadius.circular(AppRadius.full),
+											),
+											child: Text(
+												dateLabel,
+												style: AppTypography.labelSmall.copyWith(
+													color: AppColors.textSecondary,
+												),
+											),
 										),
 									],
 								),

@@ -15,6 +15,10 @@ class NotesScreen extends ConsumerWidget {
 	Widget build(BuildContext context, WidgetRef ref) {
 		final notesAsync = ref.watch(notesProvider);
 		final searchQuery = ref.watch(noteSearchQueryProvider);
+		final noteCount = notesAsync.maybeWhen(
+			data: (notes) => notes.length,
+			orElse: () => null,
+		);
 		final notesState = notesAsync.when(
 			data: (notes) => _NotesBody(
 				key: ValueKey('notes-data-${notes.length}-$searchQuery'),
@@ -32,9 +36,9 @@ class NotesScreen extends ConsumerWidget {
 						floating: true,
 						elevation: 0,
 						backgroundColor: Colors.transparent,
-						title: const Text('Notes'),
+						title: const SizedBox.shrink(),
 						bottom: PreferredSize(
-							preferredSize: const Size.fromHeight(88),
+							preferredSize: const Size.fromHeight(168),
 							child: Padding(
 								padding: const EdgeInsets.fromLTRB(
 									AppSpacing.lg,
@@ -42,23 +46,106 @@ class NotesScreen extends ConsumerWidget {
 									AppSpacing.lg,
 									AppSpacing.lg,
 								),
-								child: Container(
-									decoration: BoxDecoration(
-										color: AppColors.surface,
-										borderRadius: BorderRadius.circular(AppRadius.xl),
-										border: Border.all(color: AppColors.border),
-									),
-									child: TextField(
-										onChanged: (value) =>
-											ref.read(noteSearchQueryProvider.notifier).state = value,
-										decoration: InputDecoration(
-											hintText: 'Search notes...',
-											prefixIcon: const Icon(Icons.search),
-											border: OutlineInputBorder(
+								child: Column(
+									children: [
+										Container(
+											width: double.infinity,
+											padding: const EdgeInsets.all(AppSpacing.lg),
+											decoration: BoxDecoration(
+												color: AppColors.surface,
 												borderRadius: BorderRadius.circular(AppRadius.xl),
+												border: Border.all(color: AppColors.border),
+												boxShadow: [
+													BoxShadow(
+														color: Colors.black.withValues(alpha: 0.03),
+														blurRadius: 8,
+														offset: const Offset(0, 4),
+													),
+												],
+											),
+											child: Row(
+												children: [
+													Expanded(
+														child: Column(
+															crossAxisAlignment: CrossAxisAlignment.start,
+															children: [
+																const Text('Notes', style: AppTypography.displaySmall),
+																const SizedBox(height: AppSpacing.xs),
+																Text(
+																	'Capture, connect, and revisit your ideas.',
+																	style: AppTypography.bodySmall.copyWith(
+																		color: AppColors.textSecondary,
+																	),
+																),
+															],
+														),
+													),
+													if (noteCount != null)
+														AnimatedContainer(
+															duration: const Duration(milliseconds: 220),
+															padding: const EdgeInsets.symmetric(
+																horizontal: AppSpacing.md,
+																vertical: AppSpacing.sm,
+															),
+															decoration: BoxDecoration(
+																color: AppColors.surfaceSecondary,
+																borderRadius: BorderRadius.circular(AppRadius.full),
+															),
+															child: Text(
+																'$noteCount notes',
+																style: AppTypography.labelSmall.copyWith(
+																	color: AppColors.textSecondary,
+																),
+															),
+														),
+												],
 											),
 										),
-									),
+										const SizedBox(height: AppSpacing.md),
+										Container(
+											decoration: BoxDecoration(
+												color: AppColors.surface,
+												borderRadius: BorderRadius.circular(AppRadius.xl),
+												border: Border.all(color: AppColors.border),
+											),
+											child: TextField(
+												onChanged: (value) =>
+													ref.read(noteSearchQueryProvider.notifier).state = value,
+												decoration: InputDecoration(
+													hintText: 'Search notes...',
+													prefixIcon: Padding(
+														padding: const EdgeInsets.only(left: AppSpacing.sm),
+														child: Icon(
+															Icons.search,
+															color: AppColors.textSecondary.withValues(alpha: 0.9),
+														),
+													),
+													prefixIconConstraints: const BoxConstraints(
+														minWidth: 44,
+														minHeight: 44,
+													),
+													filled: true,
+													fillColor: AppColors.surfaceSecondary,
+													contentPadding: const EdgeInsets.symmetric(
+														horizontal: AppSpacing.md,
+														vertical: AppSpacing.md,
+													),
+													border: OutlineInputBorder(
+														borderRadius: BorderRadius.circular(AppRadius.xl),
+														borderSide: BorderSide.none,
+													),
+													enabledBorder: OutlineInputBorder(
+														borderRadius: BorderRadius.circular(AppRadius.xl),
+														borderSide: BorderSide.none,
+													),
+													focusedBorder: OutlineInputBorder(
+														borderRadius: BorderRadius.circular(AppRadius.xl),
+														borderSide: const BorderSide(color: AppColors.border),
+													),
+												),
+											),
+										),
+									],
 								),
 							),
 						),
@@ -94,7 +181,14 @@ class NotesScreen extends ConsumerWidget {
 					);
 					ref.invalidate(notesProvider);
 				},
-				icon: const Icon(Icons.add),
+				backgroundColor: AppColors.surface,
+				foregroundColor: AppColors.textPrimary,
+				elevation: AppElevation.md,
+				shape: RoundedRectangleBorder(
+					borderRadius: BorderRadius.circular(AppRadius.xl),
+					side: const BorderSide(color: AppColors.border),
+				),
+				icon: const Icon(Icons.add, color: AppColors.primary),
 				label: const Text('New Note'),
 			),
 		);
@@ -117,11 +211,8 @@ class _LoadingState extends StatelessWidget {
 							width: 72,
 							height: 72,
 							decoration: BoxDecoration(
-								gradient: const LinearGradient(
-									colors: [Color(0xFFE0F2FE), Color(0xFFF8FAFC)],
-									begin: Alignment.topLeft,
-									end: Alignment.bottomRight,
-								),
+								color: AppColors.surface,
+								border: Border.all(color: AppColors.border),
 								borderRadius: BorderRadius.circular(AppRadius.xl),
 							),
 							child: const Center(
@@ -205,26 +296,30 @@ class _NotesBody extends ConsumerWidget {
 					children: [
 						const SizedBox(height: 60),
 						Container(
-							width: 84,
-							height: 84,
+							width: 96,
+							height: 96,
 							decoration: BoxDecoration(
-								gradient: const LinearGradient(
-									colors: [Color(0xFFE0F2FE), Color(0xFFF8FAFC)],
-									begin: Alignment.topLeft,
-									end: Alignment.bottomRight,
-								),
+								color: AppColors.surface,
+								border: Border.all(color: AppColors.border),
 								borderRadius: BorderRadius.circular(AppRadius.xl),
+								boxShadow: [
+									BoxShadow(
+										color: Colors.black.withValues(alpha: 0.03),
+										blurRadius: 10,
+										offset: const Offset(0, 6),
+									),
+								],
 							),
 							child: const Icon(
 								Icons.note_outlined,
-								size: 42,
+								size: 44,
 								color: AppColors.primary,
 							),
 						),
 						const SizedBox(height: AppSpacing.lg),
 						Text(
 							hasSearch ? 'No notes found' : 'Capture your first idea',
-							style: AppTypography.headlineMedium,
+							style: AppTypography.headlineLarge,
 							textAlign: TextAlign.center,
 						),
 						const SizedBox(height: AppSpacing.md),
@@ -239,7 +334,7 @@ class _NotesBody extends ConsumerWidget {
 						if (!hasSearch) const SizedBox(height: AppSpacing.xs),
 						Text(
 							hasSearch ? 'Try adjusting your search' : 'Create your first note',
-							style: AppTypography.bodyMedium.copyWith(
+							style: AppTypography.bodySmall.copyWith(
 								color: AppColors.textSecondary,
 							),
 							textAlign: TextAlign.center,
@@ -283,6 +378,13 @@ class _NotesBody extends ConsumerWidget {
 							color: AppColors.surface,
 							borderRadius: BorderRadius.circular(AppRadius.xl),
 							border: Border.all(color: AppColors.border),
+							boxShadow: [
+								BoxShadow(
+									color: Colors.black.withValues(alpha: 0.03),
+									blurRadius: 8,
+									offset: const Offset(0, 4),
+								),
+							],
 						),
 						child: Column(
 							crossAxisAlignment: CrossAxisAlignment.start,
@@ -299,7 +401,11 @@ class _NotesBody extends ConsumerWidget {
 					),
 					const SizedBox(height: AppSpacing.xl),
 					if (pinnedNotes.isNotEmpty) ...[
-						const _SectionHeader(title: 'Pinned notes', icon: Icons.push_pin_outlined),
+						_SectionHeader(
+							title: 'Pinned notes',
+							icon: Icons.push_pin_outlined,
+							count: pinnedNotes.length,
+						),
 						const SizedBox(height: AppSpacing.md),
 						GridView.builder(
 							shrinkWrap: true,
@@ -308,7 +414,7 @@ class _NotesBody extends ConsumerWidget {
 								crossAxisCount: 2,
 								crossAxisSpacing: AppSpacing.md,
 								mainAxisSpacing: AppSpacing.md,
-								childAspectRatio: 1.15,
+								childAspectRatio: 1.05,
 							),
 							itemCount: pinnedNotes.length,
 							itemBuilder: (context, index) {
@@ -321,7 +427,11 @@ class _NotesBody extends ConsumerWidget {
 						),
 						const SizedBox(height: AppSpacing.xl),
 					],
-					const _SectionHeader(title: 'Recent notes', icon: Icons.history),
+					_SectionHeader(
+						title: 'Recent notes',
+						icon: Icons.history,
+						count: recentNotes.where((note) => !note.isPinned).length,
+					),
 					const SizedBox(height: AppSpacing.md),
 					...recentNotes.where((note) => !note.isPinned).map((note) {
 						return Padding(
@@ -339,17 +449,22 @@ class _NotesBody extends ConsumerWidget {
 						icon: Icons.lightbulb_outline,
 					),
 					const SizedBox(height: AppSpacing.md),
-					Container(
-						width: double.infinity,
-						padding: const EdgeInsets.all(AppSpacing.md),
-						decoration: BoxDecoration(
-							color: AppColors.surfaceSecondary,
-							borderRadius: BorderRadius.circular(AppRadius.lg),
-						),
-						child: Text(
-							'Review $suggestedReviewCount recent notes to keep ideas fresh.',
-							style: AppTypography.bodySmall.copyWith(
-								color: AppColors.textSecondary,
+					AnimatedOpacity(
+						duration: const Duration(milliseconds: 240),
+						opacity: 1,
+						child: Container(
+							width: double.infinity,
+							padding: const EdgeInsets.all(AppSpacing.md),
+							decoration: BoxDecoration(
+								color: AppColors.surfaceSecondary,
+								borderRadius: BorderRadius.circular(AppRadius.lg),
+								border: Border.all(color: AppColors.border),
+							),
+							child: Text(
+								'Review $suggestedReviewCount recent notes to keep ideas fresh.',
+								style: AppTypography.bodySmall.copyWith(
+									color: AppColors.textSecondary,
+								),
 							),
 						),
 					),
@@ -395,10 +510,11 @@ class _SummaryRow extends StatelessWidget {
 
 
 class _SectionHeader extends StatelessWidget {
-	const _SectionHeader({required this.title, required this.icon});
+	const _SectionHeader({required this.title, required this.icon, this.count});
 
 	final String title;
 	final IconData icon;
+	final int? count;
 
 	@override
 	Widget build(BuildContext context) {
@@ -407,6 +523,25 @@ class _SectionHeader extends StatelessWidget {
 				Icon(icon, size: 18, color: AppColors.primary),
 				const SizedBox(width: AppSpacing.sm),
 				Text(title, style: AppTypography.headlineSmall),
+				if (count != null) ...[
+					const SizedBox(width: AppSpacing.sm),
+					Container(
+						padding: const EdgeInsets.symmetric(
+							horizontal: AppSpacing.sm,
+							vertical: AppSpacing.xs,
+						),
+						decoration: BoxDecoration(
+							color: AppColors.surfaceSecondary,
+							borderRadius: BorderRadius.circular(AppRadius.full),
+						),
+						child: Text(
+							'$count',
+							style: AppTypography.labelSmall.copyWith(
+								color: AppColors.textSecondary,
+							),
+						),
+					),
+				],
 			],
 		);
 	}
@@ -429,6 +564,13 @@ class _PinnedNoteCard extends StatelessWidget {
 				color: AppColors.surface,
 				borderRadius: BorderRadius.circular(AppRadius.lg),
 				border: Border.all(color: AppColors.border),
+				boxShadow: [
+					BoxShadow(
+						color: Colors.black.withValues(alpha: 0.03),
+						blurRadius: 8,
+						offset: const Offset(0, 4),
+					),
+				],
 			),
 			child: Column(
 				crossAxisAlignment: CrossAxisAlignment.start,
