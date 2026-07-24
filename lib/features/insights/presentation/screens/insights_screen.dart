@@ -42,6 +42,20 @@ class InsightsScreen extends ConsumerWidget {
       .where((task) => task.isCompleted && _isSameDay(task.updatedAt, now))
       .length;
     final hasAnyData = tasks.isNotEmpty || notes.isNotEmpty;
+    final pending = tasks.length - completed;
+    final focusLevel = consistency;
+    final totalSignals = tasks.length + notes.length;
+    final currentStreakLabel = streakDays == 0 ? '--' : '$streakDays days';
+    final bestStreakLabel = completedThisWeek == 0 ? '--' : '$completedThisWeek days';
+    final weeklyBars = <double>[
+      (completedThisWeek / 7).clamp(0, 1).toDouble(),
+      completionRate.clamp(0, 1),
+      (score / 100).clamp(0, 1),
+      (createdNotesThisWeek / 7).clamp(0, 1).toDouble(),
+      (weeklyProductivity / 100).clamp(0, 1).toDouble(),
+      (completed / (tasks.isEmpty ? 1 : tasks.length)).clamp(0, 1).toDouble(),
+      (notes.length / ((notes.length + tasks.length) == 0 ? 1 : (notes.length + tasks.length))).clamp(0, 1).toDouble(),
+    ];
 
     return Scaffold(
       body: SafeArea(
@@ -55,16 +69,33 @@ class InsightsScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Insights', style: AppTypography.displaySmall),
+              const Text('Insights', style: AppTypography.displayLarge),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                'Product performance dashboard built from your current workspace activity',
+                'A modern snapshot of your execution rhythm and knowledge flow.',
                 style: AppTypography.bodyMedium.copyWith(
                   color: AppColors.textSecondary,
                 ),
               ),
+              const SizedBox(height: AppSpacing.md),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.full),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Text(
+                  '$totalSignals tracked signals',
+                  style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary),
+                ),
+              ),
               const SizedBox(height: AppSpacing.xl),
-              if (!hasAnyData)
+              if (!hasAnyData) ...[
                 _InsightsCard(
                   title: 'Your productivity journey starts here',
                   child: Column(
@@ -90,92 +121,177 @@ class InsightsScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
-                )
-              else ...[
-                Container(
+                ),
+                const SizedBox(height: AppSpacing.lg),
+              ],
+              _InsightsCard(
+                title: 'Productivity Score',
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 240),
+                  child: hasAnyData
+                      ? Row(
+                          key: const ValueKey('score-data'),
+                          children: [
+                            _ScoreRing(score: score.clamp(0, 100).toDouble()),
+                            const SizedBox(width: AppSpacing.lg),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${score.clamp(0, 100)} / 100',
+                                    style: AppTypography.headlineLarge,
+                                  ),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  Text(
+                                    consistency,
+                                    style: AppTypography.bodySmall.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        )
+                      : const _CardPlaceholder(
+                          key: ValueKey('score-empty'),
+                          message: 'Complete a few tasks to unlock your score trend.',
+                        ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              _InsightsCard(
+                title: 'Weekly Overview',
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 240),
+                  child: hasAnyData
+                      ? Column(
+                          key: const ValueKey('weekly-data'),
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              height: 84,
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: List.generate(weeklyBars.length, (index) {
+                                  final labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+                                  return Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 3),
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        children: [
+                                          AnimatedContainer(
+                                            duration: const Duration(milliseconds: 260),
+                                            curve: Curves.easeOutCubic,
+                                            height: 12 + (weeklyBars[index] * 52),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.primary.withValues(
+                                                alpha: 0.3 + (weeklyBars[index] * 0.7),
+                                              ),
+                                              borderRadius: BorderRadius.circular(AppRadius.sm),
+                                            ),
+                                          ),
+                                          const SizedBox(height: AppSpacing.xs),
+                                          Text(labels[index], style: AppTypography.labelSmall),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            Text(
+                              'Weekly productivity $weeklyProductivity/100',
+                              style: AppTypography.bodySmall.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        )
+                      : const _CardPlaceholder(
+                          key: ValueKey('weekly-empty'),
+                          message: 'Your weekly bars will appear after your first activity.',
+                        ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              _InsightsCard(
+                title: 'Streak',
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _MiniMetricCard(
+                        label: 'Current streak',
+                        value: hasAnyData ? currentStreakLabel : '--',
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: _MiniMetricCard(
+                        label: 'Best streak',
+                        value: hasAnyData ? bestStreakLabel : '--',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              _InsightsCard(
+                title: 'Productivity Cards',
+                child: GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 2,
+                  crossAxisSpacing: AppSpacing.md,
+                  mainAxisSpacing: AppSpacing.md,
+                  childAspectRatio: 1.35,
+                  children: [
+                    _MiniMetricCard(label: 'Completed', value: '$completed'),
+                    _MiniMetricCard(label: 'Pending', value: '$pending'),
+                    _MiniMetricCard(label: 'Notes', value: '${notes.length}'),
+                    _MiniMetricCard(
+                      label: 'Focus',
+                      value: hasAnyData ? focusLevel : '--',
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              AnimatedOpacity(
+                duration: const Duration(milliseconds: 220),
+                opacity: hasAnyData ? 1 : 0.92,
+                child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(AppSpacing.lg),
                   decoration: BoxDecoration(
+                    color: AppColors.surfaceSecondary,
                     borderRadius: BorderRadius.circular(AppRadius.xl),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF1D4ED8), Color(0xFF1E3A8A)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Weekly productivity',
-                        style: TextStyle(color: Colors.white70, fontSize: 14),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        '$weeklyProductivity / 100',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        consistency,
-                        style: const TextStyle(color: Colors.white70),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                _InsightsCard(
-                  title: 'Focus score',
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${score.clamp(0, 100)} / 100',
-                        style: AppTypography.headlineLarge,
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(AppRadius.full),
-                        child: LinearProgressIndicator(
-                          value: score / 100,
-                          minHeight: 8,
-                          backgroundColor: AppColors.surfaceSecondary,
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                            AppColors.primary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                _InsightsCard(
-                  title: 'Completion streak',
-                  child: _MetricRow(
-                    label: 'Active streak today',
-                    value: '${streakDays == 0 ? 1 : streakDays} days',
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                _InsightsCard(
-                  title: 'Completed tasks this week',
-                  child: Column(
-                    children: [
-                      _MetricRow(label: 'Completed tasks', value: '$completedThisWeek'),
-                      const SizedBox(height: AppSpacing.sm),
+                      Text('Insights Summary', style: AppTypography.headlineSmall),
+                      const SizedBox(height: AppSpacing.md),
                       _MetricRow(label: 'Completion rate', value: '${(completionRate * 100).round()}%'),
                       const SizedBox(height: AppSpacing.sm),
-                      _MetricRow(label: 'Notes captured this week', value: '$createdNotesThisWeek'),
+                      _MetricRow(label: 'Completed this week', value: '$completedThisWeek'),
                       const SizedBox(height: AppSpacing.sm),
-                      _MetricRow(label: 'Total completed tasks', value: '$completed'),
+                      _MetricRow(label: 'Notes this week', value: '$createdNotesThisWeek'),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        hasAnyData
+                            ? 'Keep your pace by completing one key task before midday.'
+                            : 'Start with one task and one note to populate your dashboard.',
+                        style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+                      ),
                     ],
                   ),
                 ),
-              ],
+              ),
             ],
           ),
         ),
@@ -199,6 +315,13 @@ class _InsightsCard extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.xl),
         border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -229,6 +352,82 @@ class _MetricRow extends StatelessWidget {
         const Spacer(),
         Text(value, style: AppTypography.labelLarge),
       ],
+    );
+  }
+}
+
+class _CardPlaceholder extends StatelessWidget {
+  const _CardPlaceholder({super.key, required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceSecondary,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
+      child: Text(
+        message,
+        style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+      ),
+    );
+  }
+}
+
+class _ScoreRing extends StatelessWidget {
+  const _ScoreRing({required this.score});
+
+  final double score;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 74,
+      height: 74,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          CircularProgressIndicator(
+            value: score / 100,
+            strokeWidth: 7,
+            backgroundColor: AppColors.surfaceSecondary,
+            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+          ),
+          Text('${score.round()}', style: AppTypography.labelLarge),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniMetricCard extends StatelessWidget {
+  const _MiniMetricCard({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceSecondary,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(label, style: AppTypography.bodySmall),
+          const SizedBox(height: AppSpacing.xs),
+          Text(value, style: AppTypography.headlineMedium),
+        ],
+      ),
     );
   }
 }
