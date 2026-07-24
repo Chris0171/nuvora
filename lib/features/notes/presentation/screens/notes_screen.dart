@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nuvora/core/navigation/app_page_route.dart';
 import 'package:nuvora/core/productivity/productivity_analyzer.dart';
 import 'package:nuvora/core/theme/app_design_system.dart';
+import 'package:nuvora/core/widgets/app_feedback.dart';
+import 'package:nuvora/core/widgets/app_motion.dart';
+import 'package:nuvora/core/widgets/app_responsive.dart';
 import 'package:nuvora/features/notes/application/controllers/note_provider.dart';
 import 'package:nuvora/features/notes/domain/entities/note.dart';
 import 'package:nuvora/features/notes/presentation/screens/create_note_screen.dart';
@@ -13,6 +17,10 @@ class NotesScreen extends ConsumerWidget {
 
 	@override
 	Widget build(BuildContext context, WidgetRef ref) {
+		final horizontalPadding = AppResponsive.pagePadding(context);
+		final maxWidth = AppResponsive.maxContentWidth(context);
+		final titleScale = AppResponsive.titleScale(context);
+
 		final notesAsync = ref.watch(notesProvider);
 		final searchQuery = ref.watch(noteSearchQueryProvider);
 		final noteCount = notesAsync.maybeWhen(
@@ -30,8 +38,13 @@ class NotesScreen extends ConsumerWidget {
 		);
 
 		return Scaffold(
-			body: CustomScrollView(
-				slivers: [
+			body: FadeSlideIn(
+				child: Align(
+					alignment: Alignment.topCenter,
+					child: ConstrainedBox(
+						constraints: BoxConstraints(maxWidth: maxWidth),
+						child: CustomScrollView(
+							slivers: [
 					SliverAppBar(
 						floating: true,
 						elevation: 0,
@@ -40,10 +53,10 @@ class NotesScreen extends ConsumerWidget {
 						bottom: PreferredSize(
 							preferredSize: const Size.fromHeight(168),
 							child: Padding(
-								padding: const EdgeInsets.fromLTRB(
-									AppSpacing.lg,
+								padding: EdgeInsets.fromLTRB(
+									horizontalPadding,
 									0,
-									AppSpacing.lg,
+									horizontalPadding,
 									AppSpacing.lg,
 								),
 								child: Column(
@@ -69,7 +82,12 @@ class NotesScreen extends ConsumerWidget {
 														child: Column(
 															crossAxisAlignment: CrossAxisAlignment.start,
 															children: [
-																const Text('Notes', style: AppTypography.displaySmall),
+																Text(
+																	'Notes',
+																	style: AppTypography.displaySmall.copyWith(
+																		fontSize: AppTypography.displaySmall.fontSize! * titleScale,
+																	),
+																),
 																const SizedBox(height: AppSpacing.xs),
 																Text(
 																	'Capture, connect, and revisit your ideas.',
@@ -82,7 +100,7 @@ class NotesScreen extends ConsumerWidget {
 													),
 													if (noteCount != null)
 														AnimatedContainer(
-															duration: const Duration(milliseconds: 220),
+															duration: AppMotion.duration,
 															padding: const EdgeInsets.symmetric(
 																horizontal: AppSpacing.md,
 																vertical: AppSpacing.sm,
@@ -152,15 +170,15 @@ class NotesScreen extends ConsumerWidget {
 					),
 					SliverToBoxAdapter(
 						child: AnimatedSwitcher(
-							duration: const Duration(milliseconds: 320),
-							switchInCurve: Curves.easeOutCubic,
-							switchOutCurve: Curves.easeInCubic,
+							duration: AppMotion.duration,
+							switchInCurve: AppMotion.curve,
+							switchOutCurve: AppMotion.curve,
 							transitionBuilder: (child, animation) {
 								return FadeTransition(
 									opacity: animation,
 									child: SlideTransition(
 										position: Tween<Offset>(
-											begin: const Offset(0, 0.03),
+											begin: AppMotion.subtleOffset,
 											end: Offset.zero,
 										).animate(animation),
 										child: child,
@@ -171,6 +189,9 @@ class NotesScreen extends ConsumerWidget {
 						),
 					),
 				],
+						),
+					),
+				),
 			),
 			floatingActionButton: FloatingActionButton.extended(
 				onPressed: () async {
@@ -200,39 +221,7 @@ class _LoadingState extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		return Center(
-			child: Padding(
-				padding: const EdgeInsets.all(AppSpacing.lg),
-				child: Column(
-					mainAxisAlignment: MainAxisAlignment.center,
-					children: [
-						const SizedBox(height: 60),
-						Container(
-							width: 72,
-							height: 72,
-							decoration: BoxDecoration(
-								color: AppColors.surface,
-								border: Border.all(color: AppColors.border),
-								borderRadius: BorderRadius.circular(AppRadius.xl),
-							),
-							child: const Center(
-								child: CircularProgressIndicator(
-									color: AppColors.primary,
-								),
-							),
-						),
-						const SizedBox(height: AppSpacing.lg),
-						Text(
-							'Loading notes...',
-							style: AppTypography.bodyMedium.copyWith(
-								color: AppColors.textSecondary,
-							),
-						),
-						const SizedBox(height: 60),
-					],
-				),
-			),
-		);
+		return const AppLoadingState(label: 'Loading notes...');
 	}
 }
 
@@ -287,73 +276,33 @@ class _NotesBody extends ConsumerWidget {
 
 	@override
 	Widget build(BuildContext context, WidgetRef ref) {
+		final horizontalPadding = AppResponsive.pagePadding(context);
+		final pinnedColumns = AppResponsive.adaptiveColumns(
+			context,
+			mobile: 1,
+			tablet: 2,
+			desktop: 3,
+		);
+
 		if (notes.isEmpty) {
-			return Padding(
+			return AppEmptyState(
 				key: ValueKey('notes-empty-$hasSearch'),
-				padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-				child: Column(
-					mainAxisAlignment: MainAxisAlignment.center,
-					children: [
-						const SizedBox(height: 60),
-						Container(
-							width: 96,
-							height: 96,
-							decoration: BoxDecoration(
-								color: AppColors.surface,
-								border: Border.all(color: AppColors.border),
-								borderRadius: BorderRadius.circular(AppRadius.xl),
-								boxShadow: [
-									BoxShadow(
-										color: Colors.black.withValues(alpha: 0.03),
-										blurRadius: 10,
-										offset: const Offset(0, 6),
-									),
-								],
-							),
-							child: const Icon(
-								Icons.note_outlined,
-								size: 44,
-								color: AppColors.primary,
-							),
-						),
-						const SizedBox(height: AppSpacing.lg),
-						Text(
-							hasSearch ? 'No notes found' : 'Capture your first idea',
-							style: AppTypography.headlineLarge,
-							textAlign: TextAlign.center,
-						),
-						const SizedBox(height: AppSpacing.md),
-						if (!hasSearch)
-							Text(
-								'No notes yet',
-								style: AppTypography.bodyMedium.copyWith(
-									color: AppColors.textSecondary,
-								),
-								textAlign: TextAlign.center,
-							),
-						if (!hasSearch) const SizedBox(height: AppSpacing.xs),
-						Text(
-							hasSearch ? 'Try adjusting your search' : 'Create your first note',
-							style: AppTypography.bodySmall.copyWith(
-								color: AppColors.textSecondary,
-							),
-							textAlign: TextAlign.center,
-						),
-						const SizedBox(height: AppSpacing.lg),
-						if (!hasSearch)
-							ElevatedButton.icon(
-								onPressed: () async {
-									await Navigator.of(context).push(
-										AppPageRoute<void>(builder: (_) => const CreateNoteScreen()),
-									);
-									ref.invalidate(notesProvider);
-								},
-								icon: const Icon(Icons.lightbulb_outline),
-								label: const Text('Create your first note'),
-							),
-						const SizedBox(height: 60),
-					],
-				),
+				icon: Icons.note_outlined,
+				title: hasSearch ? 'No notes found' : 'Capture your first idea',
+				detail: hasSearch ? null : 'No notes yet',
+				description: hasSearch ? 'Try adjusting your search' : 'Create your first note',
+				button: !hasSearch
+					? ElevatedButton.icon(
+						onPressed: () async {
+							await Navigator.of(context).push(
+								AppPageRoute<void>(builder: (_) => const CreateNoteScreen()),
+							);
+							ref.invalidate(notesProvider);
+						},
+						icon: const Icon(Icons.lightbulb_outline),
+						label: const Text('Create your first note'),
+					)
+					: null,
 			);
 		}
 
@@ -364,8 +313,8 @@ class _NotesBody extends ConsumerWidget {
 
 		return Padding(
 			key: const ValueKey('notes-content'),
-			padding: const EdgeInsets.symmetric(
-				horizontal: AppSpacing.lg,
+			padding: EdgeInsets.symmetric(
+				horizontal: horizontalPadding,
 				vertical: AppSpacing.md,
 			),
 			child: Column(
@@ -410,8 +359,8 @@ class _NotesBody extends ConsumerWidget {
 						GridView.builder(
 							shrinkWrap: true,
 							physics: const NeverScrollableScrollPhysics(),
-							gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-								crossAxisCount: 2,
+							gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+								crossAxisCount: pinnedColumns,
 								crossAxisSpacing: AppSpacing.md,
 								mainAxisSpacing: AppSpacing.md,
 								childAspectRatio: 1.05,
@@ -450,7 +399,7 @@ class _NotesBody extends ConsumerWidget {
 					),
 					const SizedBox(height: AppSpacing.md),
 					AnimatedOpacity(
-						duration: const Duration(milliseconds: 240),
+						duration: AppMotion.duration,
 						opacity: 1,
 						child: Container(
 							width: double.infinity,
@@ -475,13 +424,12 @@ class _NotesBody extends ConsumerWidget {
 
 	Future<void> _deleteNote(BuildContext context, WidgetRef ref, String id) async {
 		try {
+			HapticFeedback.mediumImpact();
 			await ref.read(noteControllerProvider).deleteNote(id);
 			ref.invalidate(notesProvider);
 		} catch (_) {
 			if (context.mounted) {
-				ScaffoldMessenger.of(context).showSnackBar(
-					const SnackBar(content: Text('Could not delete note')),
-				);
+				AppFeedback.showSnackBar(context, 'Could not delete note');
 			}
 		}
 	}

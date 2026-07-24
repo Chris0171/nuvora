@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nuvora/core/navigation/app_page_route.dart';
 import 'package:nuvora/core/productivity/productivity_analyzer.dart';
 import 'package:nuvora/core/theme/app_design_system.dart';
+import 'package:nuvora/core/widgets/app_motion.dart';
+import 'package:nuvora/core/widgets/app_responsive.dart';
 import 'package:nuvora/features/tasks/application/controllers/task_provider.dart';
 import 'package:nuvora/features/tasks/domain/entities/task.dart';
 import 'package:nuvora/features/tasks/presentation/screens/create_task_screen.dart';
@@ -13,6 +15,10 @@ class HomeScreen extends ConsumerWidget {
 
 	@override
 	Widget build(BuildContext context, WidgetRef ref) {
+		final horizontalPadding = AppResponsive.pagePadding(context);
+		final maxWidth = AppResponsive.maxContentWidth(context);
+		final titleScale = AppResponsive.titleScale(context);
+
 		final List<Task> tasks = ref.watch(tasksProvider).maybeWhen(
 			data: (items) => items,
 			orElse: () => const <Task>[],
@@ -25,8 +31,13 @@ class HomeScreen extends ConsumerWidget {
 			: '$pending active • $completed completed';
 
 		return Scaffold(
-			body: CustomScrollView(
-				slivers: [
+			body: FadeSlideIn(
+				child: Align(
+					alignment: Alignment.topCenter,
+					child: ConstrainedBox(
+						constraints: BoxConstraints(maxWidth: maxWidth),
+						child: CustomScrollView(
+							slivers: [
 					SliverAppBar(
 						floating: true,
 						elevation: 0,
@@ -35,10 +46,10 @@ class HomeScreen extends ConsumerWidget {
 						bottom: PreferredSize(
 							preferredSize: const Size.fromHeight(138),
 							child: Padding(
-								padding: const EdgeInsets.fromLTRB(
-									AppSpacing.lg,
+								padding: EdgeInsets.fromLTRB(
+									horizontalPadding,
 									0,
-									AppSpacing.lg,
+									horizontalPadding,
 									AppSpacing.lg,
 								),
 								child: Container(
@@ -64,7 +75,12 @@ class HomeScreen extends ConsumerWidget {
 												style: AppTypography.labelLarge,
 											),
 											const SizedBox(height: AppSpacing.xs),
-											Text('Focus Plan', style: AppTypography.displaySmall.copyWith(fontSize: 28)),
+											Text(
+												'Focus Plan',
+												style: AppTypography.displaySmall.copyWith(
+													fontSize: 28 * titleScale,
+												),
+											),
 											const SizedBox(height: AppSpacing.xs),
 											Text(
 												subtitle,
@@ -92,6 +108,9 @@ class HomeScreen extends ConsumerWidget {
 						child: TaskListScreen(),
 					),
 				],
+						),
+					),
+				),
 			),
 			floatingActionButton: FloatingActionButton.extended(
 				backgroundColor: AppColors.surface,

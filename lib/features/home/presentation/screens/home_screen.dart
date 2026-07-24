@@ -9,6 +9,8 @@ import 'package:nuvora/features/notes/presentation/screens/create_note_screen.da
 import 'package:nuvora/features/tasks/application/controllers/task_provider.dart';
 import 'package:nuvora/features/tasks/domain/entities/task.dart';
 import 'package:nuvora/features/tasks/presentation/screens/create_task_screen.dart';
+import 'package:nuvora/core/widgets/app_motion.dart';
+import 'package:nuvora/core/widgets/app_responsive.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -26,6 +28,17 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final horizontalPadding = AppResponsive.pagePadding(context);
+    final maxWidth = AppResponsive.maxContentWidth(context);
+    final titleScale = AppResponsive.titleScale(context);
+    final summaryColumns = AppResponsive.adaptiveColumns(
+      context,
+      mobile: 1,
+      tablet: 2,
+      desktop: 3,
+    );
+    final compactActions = MediaQuery.sizeOf(context).width < 430;
+
     final tasksAsync = ref.watch(tasksProvider);
     final notesAsync = ref.watch(notesProvider);
     final tasks = tasksAsync.maybeWhen(
@@ -51,164 +64,214 @@ class HomeScreen extends ConsumerWidget {
 
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.lg,
-            AppSpacing.lg,
-            100,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _greetingLabel(),
-                style: AppTypography.bodyMedium.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              const Text('Nuvora', style: AppTypography.displaySmall),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                'Your daily command center',
-                style: AppTypography.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppRadius.xl),
-                  border: Border.all(color: AppColors.border),
+        child: FadeSlideIn(
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth),
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                  horizontalPadding,
+                  AppSpacing.lg,
+                  horizontalPadding,
+                  100,
                 ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Today\'s Focus', style: AppTypography.headlineMedium),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      '${(focusScore * 100).round()}%',
-                      style: AppTypography.displaySmall,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _greetingLabel(),
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
                     ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      recommendedTask?.title ?? 'No priority task selected yet',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Nuvora',
+                    style: AppTypography.displaySmall.copyWith(
+                      fontSize: AppTypography.displaySmall.fontSize! * titleScale,
                     ),
-                    const SizedBox(height: AppSpacing.md),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(AppRadius.full),
-                      child: LinearProgressIndicator(
-                        minHeight: 8,
-                        value: focusScore,
-                        backgroundColor: AppColors.surfaceSecondary,
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                          AppColors.primary,
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Your daily command center',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Today\'s Focus', style: AppTypography.headlineMedium),
+                        const SizedBox(height: AppSpacing.sm),
+                        Text(
+                          '${(focusScore * 100).round()}%',
+                          style: AppTypography.displaySmall,
                         ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          recommendedTask?.title ?? 'No priority task selected yet',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.bodySmall.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(AppRadius.full),
+                          child: LinearProgressIndicator(
+                            minHeight: 8,
+                            value: focusScore,
+                            backgroundColor: AppColors.surfaceSecondary,
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                              AppColors.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  const Text('Quick Actions', style: AppTypography.headlineMedium),
+                  const SizedBox(height: AppSpacing.md),
+                  if (compactActions)
+                    Column(
+                      children: [
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () async {
+                              await Navigator.of(context).push(
+                                AppPageRoute<void>(
+                                  builder: (_) => const CreateTaskScreen(),
+                                ),
+                              );
+                              ref.invalidate(tasksProvider);
+                            },
+                            icon: const Icon(Icons.add),
+                            label: const Text('Create Task'),
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              await Navigator.of(context).push(
+                                AppPageRoute<void>(
+                                  builder: (_) => const CreateNoteScreen(),
+                                ),
+                              );
+                              ref.invalidate(notesProvider);
+                            },
+                            icon: const Icon(Icons.note_add_outlined),
+                            label: const Text('Create Note'),
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () async {
+                              await Navigator.of(context).push(
+                                AppPageRoute<void>(
+                                  builder: (_) => const CreateTaskScreen(),
+                                ),
+                              );
+                              ref.invalidate(tasksProvider);
+                            },
+                            icon: const Icon(Icons.add),
+                            label: const Text('Create Task'),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              await Navigator.of(context).push(
+                                AppPageRoute<void>(
+                                  builder: (_) => const CreateNoteScreen(),
+                                ),
+                              );
+                              ref.invalidate(notesProvider);
+                            },
+                            icon: const Icon(Icons.note_add_outlined),
+                            label: const Text('Create Note'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  const SizedBox(height: AppSpacing.lg),
+                  const Text('Summary', style: AppTypography.headlineMedium),
+                  const SizedBox(height: AppSpacing.md),
+                  GridView.count(
+                    crossAxisCount: summaryColumns,
+                    crossAxisSpacing: AppSpacing.md,
+                    mainAxisSpacing: AppSpacing.md,
+                    childAspectRatio: 1.7,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: [
+                      _SummaryCard(title: 'Tasks', value: '${tasks.length}'),
+                      _SummaryCard(title: 'Completed', value: '$completedCount'),
+                      _SummaryCard(title: 'Notes', value: '${notes.length}'),
+                      _SummaryCard(
+                        title: 'Focus',
+                        value: '${(focusScore * 100).round()}%',
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              const Text('Quick Actions', style: AppTypography.headlineMedium),
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () async {
-                        await Navigator.of(context).push(
-                          AppPageRoute<void>(
-                            builder: (_) => const CreateTaskScreen(),
-                          ),
-                        );
-                        ref.invalidate(tasksProvider);
-                      },
-                      icon: const Icon(Icons.add),
-                      label: const Text('Create Task'),
-                    ),
+                    ],
                   ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () async {
-                        await Navigator.of(context).push(
-                          AppPageRoute<void>(
-                            builder: (_) => const CreateNoteScreen(),
-                          ),
-                        );
-                        ref.invalidate(notesProvider);
-                      },
-                      icon: const Icon(Icons.note_add_outlined),
-                      label: const Text('Create Note'),
+                  const SizedBox(height: AppSpacing.lg),
+                  const Text('Recent activity', style: AppTypography.headlineMedium),
+                  const SizedBox(height: AppSpacing.md),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
+                      border: Border.all(color: AppColors.border),
                     ),
+                    child: hasRecentActivity
+                        ? Column(
+                            children: [
+                              ...recentTasks.take(2).map(
+                                (task) => _ActivityRow(
+                                  icon: Icons.task_alt,
+                                  title: task.title,
+                                  subtitle: task.isCompleted
+                                      ? 'Completed today: $dueToday due'
+                                      : 'Task updated',
+                                ),
+                              ),
+                              ...recentNotes.take(2).map(
+                                (note) => _ActivityRow(
+                                  icon: Icons.note_alt_outlined,
+                                  title: note.title,
+                                  subtitle: 'Notes today: $notesToday',
+                                ),
+                              ),
+                            ],
+                          )
+                        : const _RecentActivityEmptyState(),
                   ),
                 ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              const Text('Summary', style: AppTypography.headlineMedium),
-              const SizedBox(height: AppSpacing.md),
-              GridView.count(
-                crossAxisCount: 2,
-                crossAxisSpacing: AppSpacing.md,
-                mainAxisSpacing: AppSpacing.md,
-                childAspectRatio: 1.7,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  _SummaryCard(title: 'Tasks', value: '${tasks.length}'),
-                  _SummaryCard(title: 'Completed', value: '$completedCount'),
-                  _SummaryCard(title: 'Notes', value: '${notes.length}'),
-                  _SummaryCard(
-                    title: 'Focus',
-                    value: '${(focusScore * 100).round()}%',
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              const Text('Recent activity', style: AppTypography.headlineMedium),
-              const SizedBox(height: AppSpacing.md),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppRadius.xl),
-                  border: Border.all(color: AppColors.border),
                 ),
-                child: hasRecentActivity
-                    ? Column(
-                        children: [
-                          ...recentTasks.take(2).map(
-                            (task) => _ActivityRow(
-                              icon: Icons.task_alt,
-                              title: task.title,
-                              subtitle: task.isCompleted
-                                  ? 'Completed today: $dueToday due'
-                                  : 'Task updated',
-                            ),
-                          ),
-                          ...recentNotes.take(2).map(
-                            (note) => _ActivityRow(
-                              icon: Icons.note_alt_outlined,
-                              title: note.title,
-                              subtitle: 'Notes today: $notesToday',
-                            ),
-                          ),
-                        ],
-                      )
-                    : const _RecentActivityEmptyState(),
               ),
-            ],
+            ),
           ),
         ),
       ),

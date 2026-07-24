@@ -5,6 +5,7 @@ import 'package:nuvora/features/insights/presentation/screens/insights_screen.da
 import 'package:nuvora/features/notes/presentation/screens/notes_screen.dart';
 import 'package:nuvora/features/settings/presentation/screens/settings_screen.dart';
 import 'package:nuvora/features/tasks/presentation/screens/tasks_screen.dart';
+import 'package:nuvora/core/widgets/app_motion.dart';
 import 'package:nuvora/core/widgets/app_navigation_bar.dart';
 import 'package:nuvora/core/widgets/shell_container.dart';
 
@@ -110,18 +111,15 @@ class _AnimatedViewport extends StatelessWidget {
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
       key: ValueKey<int>(selectedIndex),
-      tween: Tween<double>(begin: 0.975, end: 1.0),
-      duration: const Duration(milliseconds: 320),
-      curve: Curves.easeOutCubic,
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: AppMotion.duration,
+      curve: AppMotion.curve,
       builder: (context, value, child) {
         return Opacity(
-          opacity: 0.88 + (value - 0.975) * 4.8,
+          opacity: value,
           child: Transform.translate(
-            offset: Offset(0, (1 - value) * 16),
-            child: Transform.scale(
-              scale: value,
-              child: child,
-            ),
+            offset: Offset(0, (1 - value) * 10),
+            child: child,
           ),
         );
       },

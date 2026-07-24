@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nuvora/core/theme/app_design_system.dart';
+import 'package:nuvora/core/widgets/app_motion.dart';
 import 'package:nuvora/features/notes/domain/entities/note.dart';
 
 class NoteItem extends StatefulWidget {
@@ -45,12 +46,12 @@ class _NoteItemState extends State<NoteItem> {
 		final dateLabel = _formatDate(widget.note.createdAt);
 
 		return AnimatedScale(
-			duration: const Duration(milliseconds: 140),
+			duration: AppMotion.shortDuration,
 			scale: _pressed ? 0.985 : 1,
-			curve: Curves.easeOutCubic,
+			curve: AppMotion.curve,
 			child: AnimatedContainer(
-				duration: const Duration(milliseconds: 180),
-				curve: Curves.easeOut,
+				duration: AppMotion.duration,
+				curve: AppMotion.curve,
 				decoration: BoxDecoration(
 					borderRadius: BorderRadius.circular(AppRadius.lg),
 					boxShadow: [
@@ -77,7 +78,7 @@ class _NoteItemState extends State<NoteItem> {
 							onTapUp: (_) => setState(() => _pressed = false),
 							borderRadius: BorderRadius.circular(AppRadius.lg),
 							child: Padding(
-								padding: const EdgeInsets.all(AppSpacing.lg),
+								padding: const EdgeInsets.all(AppSpacing.md),
 								child: Column(
 									crossAxisAlignment: CrossAxisAlignment.start,
 									children: [
@@ -95,7 +96,7 @@ class _NoteItemState extends State<NoteItem> {
 												const SizedBox(width: AppSpacing.sm),
 												if (widget.note.isPinned)
 													AnimatedOpacity(
-														duration: const Duration(milliseconds: 180),
+														duration: AppMotion.shortDuration,
 														opacity: 1,
 														child: Container(
 															margin: const EdgeInsets.only(right: AppSpacing.xs),

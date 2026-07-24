@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:nuvora/core/theme/app_colors.dart';
 import 'package:nuvora/core/theme/app_radius.dart';
 import 'package:nuvora/core/theme/app_spacing.dart';
+import 'package:nuvora/core/widgets/app_responsive.dart';
 import 'package:nuvora/core/widgets/animated_nav_item.dart';
 
 class AppNavigationDestination {
@@ -29,12 +30,13 @@ class AppNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final horizontalPadding = AppResponsive.pagePadding(context);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.md,
+      padding: EdgeInsets.fromLTRB(
+        horizontalPadding,
         0,
-        AppSpacing.md,
+        horizontalPadding,
         AppSpacing.md,
       ),
       child: DecoratedBox(

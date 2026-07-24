@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nuvora/core/theme/app_design_system.dart';
+import 'package:nuvora/core/widgets/app_feedback.dart';
+import 'package:nuvora/core/widgets/app_motion.dart';
 import 'package:nuvora/features/notes/application/controllers/note_provider.dart';
 import 'package:nuvora/features/notes/domain/entities/note.dart';
 
@@ -44,6 +47,9 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
 		}
 
 		setState(() => _isSaving = true);
+		if (!_isEdit) {
+			HapticFeedback.lightImpact();
+		}
 
 		final DateTime now = DateTime.now();
 		final Note note = (widget.initialNote ??
@@ -70,14 +76,9 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
 			if (mounted) Navigator.of(context).pop(true);
 		} catch (_) {
 			if (mounted) {
-				ScaffoldMessenger.of(context).showSnackBar(
-					SnackBar(
-						content: Text(
-							_isEdit
-								? 'Could not update note'
-								: 'Could not save note',
-						),
-					),
+				AppFeedback.showSnackBar(
+					context,
+					_isEdit ? 'Could not update note' : 'Could not save note',
 				);
 			}
 		} finally {
@@ -157,20 +158,29 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
 										onPressed: _isSaving ? null : _save,
 										style: ElevatedButton.styleFrom(
 											elevation: _isSaving ? 0 : AppElevation.sm,
+											disabledBackgroundColor: AppColors.disabledBackground,
+											disabledForegroundColor: AppColors.textTertiary,
 										),
-										child: _isSaving
-												? const SizedBox(
-													height: 24,
-													width: 24,
-													child: CircularProgressIndicator(
-														strokeWidth: 2.5,
-														valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+										child: AnimatedSwitcher(
+											duration: AppMotion.shortDuration,
+											switchInCurve: AppMotion.curve,
+											switchOutCurve: AppMotion.curve,
+											child: _isSaving
+													? const SizedBox(
+														key: ValueKey('note-saving'),
+														height: 24,
+														width: 24,
+														child: CircularProgressIndicator(
+															strokeWidth: 2.5,
+															valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+														),
+													)
+													: Text(
+														key: ValueKey(_isEdit ? 'note-update-label' : 'note-create-label'),
+														_isEdit ? 'Update Note' : 'Create Note',
+														style: AppTypography.labelLarge,
 													),
-												)
-												: Text(
-													_isEdit ? 'Update Note' : 'Create Note',
-													style: AppTypography.labelLarge,
-												),
+										),
 									),
 								),
 							],

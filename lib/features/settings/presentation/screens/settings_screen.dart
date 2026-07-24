@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nuvora/core/productivity/productivity_analyzer.dart';
 import 'package:nuvora/core/theme/app_design_system.dart';
+import 'package:nuvora/core/widgets/app_motion.dart';
+import 'package:nuvora/core/widgets/app_responsive.dart';
 import 'package:nuvora/features/notes/application/controllers/note_provider.dart';
 import 'package:nuvora/features/notes/domain/entities/note.dart';
 import 'package:nuvora/features/tasks/application/controllers/task_provider.dart';
@@ -12,6 +14,10 @@ class SettingsScreen extends ConsumerWidget {
 
 	@override
 	Widget build(BuildContext context, WidgetRef ref) {
+		final horizontalPadding = AppResponsive.pagePadding(context);
+		final maxWidth = AppResponsive.maxContentWidth(context);
+		final titleScale = AppResponsive.titleScale(context);
+
 		final tasks = ref.watch(tasksProvider).maybeWhen(
 			data: (items) => items,
 			orElse: () => <Task>[],
@@ -26,15 +32,25 @@ class SettingsScreen extends ConsumerWidget {
 
 		return Scaffold(
 			body: SafeArea(
-				child: ListView(
-					padding: const EdgeInsets.fromLTRB(
-						AppSpacing.lg,
-						AppSpacing.lg,
-						AppSpacing.lg,
-						100,
-					),
-					children: [
-						const Text('Settings', style: AppTypography.displayLarge),
+				child: FadeSlideIn(
+					child: Align(
+						alignment: Alignment.topCenter,
+						child: ConstrainedBox(
+							constraints: BoxConstraints(maxWidth: maxWidth),
+							child: ListView(
+								padding: EdgeInsets.fromLTRB(
+									horizontalPadding,
+									AppSpacing.lg,
+									horizontalPadding,
+									100,
+								),
+								children: [
+						Text(
+							'Settings',
+							style: AppTypography.displayLarge.copyWith(
+								fontSize: AppTypography.displayLarge.fontSize! * titleScale,
+							),
+						),
 						const SizedBox(height: AppSpacing.sm),
 						Text(
 							'Calm, polished controls for how Nuvora feels every day.',
@@ -42,7 +58,7 @@ class SettingsScreen extends ConsumerWidget {
 						),
 						const SizedBox(height: AppSpacing.md),
 						AnimatedContainer(
-							duration: const Duration(milliseconds: 220),
+							duration: AppMotion.duration,
 							padding: const EdgeInsets.symmetric(
 								horizontal: AppSpacing.md,
 								vertical: AppSpacing.sm,
@@ -66,7 +82,10 @@ class SettingsScreen extends ConsumerWidget {
 							completionPercentage: completionPercentage,
 							pendingTasks: pendingTasks,
 						),
-					],
+								],
+							),
+						),
+					),
 				),
 			),
 		);

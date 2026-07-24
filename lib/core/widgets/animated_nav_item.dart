@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:nuvora/core/theme/app_colors.dart';
 import 'package:nuvora/core/theme/app_radius.dart';
 import 'package:nuvora/core/theme/app_spacing.dart';
+import 'package:nuvora/core/widgets/app_motion.dart';
 
 class AnimatedNavItem extends StatelessWidget {
   const AnimatedNavItem({
@@ -29,8 +30,8 @@ class AnimatedNavItem extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 240),
-          curve: Curves.easeOutCubic,
+          duration: AppMotion.duration,
+          curve: AppMotion.curve,
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.sm,
             vertical: AppSpacing.xs,
@@ -43,12 +44,12 @@ class AnimatedNavItem extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               AnimatedScale(
-                duration: const Duration(milliseconds: 220),
+                duration: AppMotion.duration,
                 scale: selected ? 1.06 : 1.0,
-                curve: Curves.easeOutCubic,
+                curve: AppMotion.curve,
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeOutCubic,
+                  duration: AppMotion.duration,
+                  curve: AppMotion.curve,
                   padding: const EdgeInsets.all(AppSpacing.xs),
                   decoration: BoxDecoration(
                     color: selected ? scheme.primary.withValues(alpha: 0.16) : Colors.transparent,
@@ -63,8 +64,8 @@ class AnimatedNavItem extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeOutCubic,
+                duration: AppMotion.duration,
+                curve: AppMotion.curve,
                 style: theme.textTheme.labelSmall!.copyWith(
                   color: selected ? scheme.primary : AppColors.darkOnSurface.withValues(alpha: 0.58),
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w600,

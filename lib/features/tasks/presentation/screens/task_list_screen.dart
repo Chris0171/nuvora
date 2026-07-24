@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nuvora/core/navigation/app_page_route.dart';
 import 'package:nuvora/core/constants/priority.dart';
 import 'package:nuvora/core/productivity/productivity_analyzer.dart';
 import 'package:nuvora/core/theme/app_design_system.dart';
+import 'package:nuvora/core/widgets/app_feedback.dart';
+import 'package:nuvora/core/widgets/app_motion.dart';
+import 'package:nuvora/core/widgets/app_responsive.dart';
 import 'package:nuvora/features/tasks/application/controllers/task_provider.dart';
 import 'package:nuvora/features/tasks/domain/entities/task.dart';
 import 'package:nuvora/features/tasks/presentation/screens/create_task_screen.dart';
@@ -14,67 +18,27 @@ class TaskListScreen extends ConsumerWidget {
 
 	@override
 	Widget build(BuildContext context, WidgetRef ref) {
+		final horizontalPadding = AppResponsive.pagePadding(context);
 		final tasksAsync = ref.watch(tasksProvider);
 		final stateChild = tasksAsync.when(
 			data: (tasks) {
 				if (tasks.isEmpty) {
-					return Padding(
+					return AppEmptyState(
 						key: const ValueKey('tasks-empty'),
-						padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-						child: Column(
-							mainAxisAlignment: MainAxisAlignment.center,
-							children: [
-								const SizedBox(height: 60),
-								Container(
-									width: 84,
-									height: 84,
-									decoration: BoxDecoration(
-										color: AppColors.surfaceSecondary,
-										border: Border.all(color: AppColors.border),
-										borderRadius: BorderRadius.circular(AppRadius.xl),
+						icon: Icons.check_circle_outline,
+						title: 'Start planning your day',
+						detail: 'No tasks yet',
+						description: 'Create your first task to get started',
+						button: ElevatedButton.icon(
+							onPressed: () {
+								Navigator.of(context).push(
+									AppPageRoute<void>(
+										builder: (_) => const CreateTaskScreen(),
 									),
-									child: const Icon(
-										Icons.check_circle_outline,
-										size: 40,
-										color: AppColors.primary,
-									),
-								),
-								const SizedBox(height: AppSpacing.lg),
-								const Text(
-									'Start planning your day',
-									style: AppTypography.headlineMedium,
-									textAlign: TextAlign.center,
-								),
-								const SizedBox(height: AppSpacing.md),
-								Text(
-									'No tasks yet',
-									style: AppTypography.bodyMedium.copyWith(
-										color: AppColors.textSecondary,
-									),
-									textAlign: TextAlign.center,
-								),
-								const SizedBox(height: AppSpacing.xs),
-								Text(
-									'Create your first task to get started',
-									style: AppTypography.bodySmall.copyWith(
-										color: AppColors.textSecondary,
-									),
-									textAlign: TextAlign.center,
-								),
-								const SizedBox(height: AppSpacing.lg),
-								ElevatedButton.icon(
-									onPressed: () {
-										Navigator.of(context).push(
-											AppPageRoute<void>(
-												builder: (_) => const CreateTaskScreen(),
-											),
-										);
-									},
-									icon: const Icon(Icons.add),
-									label: const Text('Create your first task'),
-								),
-								const SizedBox(height: 60),
-							],
+								);
+							},
+							icon: const Icon(Icons.add),
+							label: const Text('Create your first task'),
 						),
 					);
 				}
@@ -100,8 +64,8 @@ class TaskListScreen extends ConsumerWidget {
 					key: ValueKey('tasks-data-${tasks.length}'),
 					shrinkWrap: true,
 					physics: const NeverScrollableScrollPhysics(),
-					padding: const EdgeInsets.symmetric(
-						horizontal: AppSpacing.lg,
+					padding: EdgeInsets.symmetric(
+						horizontal: horizontalPadding,
 						vertical: AppSpacing.md,
 					),
 					children: [
@@ -136,8 +100,8 @@ class TaskListScreen extends ConsumerWidget {
 										borderRadius: BorderRadius.circular(AppRadius.full),
 										child: TweenAnimationBuilder<double>(
 											tween: Tween<double>(begin: 0, end: progress),
-											duration: const Duration(milliseconds: 700),
-											curve: Curves.easeOutCubic,
+											duration: AppMotion.duration,
+											curve: AppMotion.curve,
 											builder: (context, value, _) {
 												return LinearProgressIndicator(
 													value: value,
@@ -176,34 +140,9 @@ class TaskListScreen extends ConsumerWidget {
 					],
 				);
 			},
-			loading: () => Center(
+			loading: () => AppLoadingState(
 				key: const ValueKey('tasks-loading'),
-				child: Padding(
-					padding: const EdgeInsets.all(AppSpacing.lg),
-					child: Column(
-						mainAxisAlignment: MainAxisAlignment.center,
-						children: [
-							Container(
-								padding: const EdgeInsets.all(AppSpacing.md),
-								decoration: BoxDecoration(
-									color: AppColors.surface,
-									borderRadius: BorderRadius.circular(AppRadius.xl),
-									border: Border.all(color: AppColors.border),
-								),
-								child: const CircularProgressIndicator(
-									color: AppColors.primary,
-								),
-							),
-							const SizedBox(height: AppSpacing.lg),
-							Text(
-								'Loading tasks...',
-								style: AppTypography.bodyMedium.copyWith(
-									color: AppColors.textSecondary,
-								),
-							),
-						],
-					),
-				),
+				label: 'Loading tasks...',
 			),
 			error: (error, _) => Center(
 				key: const ValueKey('tasks-error'),
@@ -236,15 +175,15 @@ class TaskListScreen extends ConsumerWidget {
 		);
 
 		return AnimatedSwitcher(
-			duration: const Duration(milliseconds: 320),
-			switchInCurve: Curves.easeOutCubic,
-			switchOutCurve: Curves.easeInCubic,
+			duration: AppMotion.duration,
+			switchInCurve: AppMotion.curve,
+			switchOutCurve: AppMotion.curve,
 			transitionBuilder: (child, animation) {
 				return FadeTransition(
 					opacity: animation,
 					child: SlideTransition(
 						position: Tween<Offset>(
-							begin: const Offset(0, 0.03),
+							begin: AppMotion.subtleOffset,
 							end: Offset.zero,
 						).animate(animation),
 						child: child,
@@ -263,6 +202,7 @@ class TaskListScreen extends ConsumerWidget {
 				task: task,
 				onToggleCompleted: (value) async {
 					try {
+						HapticFeedback.selectionClick();
 						await ref.read(taskControllerProvider).markTaskAsCompleted(
 							taskId: task.id,
 							isCompleted: value,
@@ -270,21 +210,18 @@ class TaskListScreen extends ConsumerWidget {
 						ref.invalidate(tasksProvider);
 					} catch (_) {
 						if (context.mounted) {
-							ScaffoldMessenger.of(context).showSnackBar(
-								const SnackBar(content: Text('Could not update task')),
-							);
+							AppFeedback.showSnackBar(context, 'Could not update task');
 						}
 					}
 				},
 				onDelete: () async {
 					try {
+						HapticFeedback.mediumImpact();
 						await ref.read(taskControllerProvider).deleteTask(task.id);
 						ref.invalidate(tasksProvider);
 					} catch (_) {
 						if (context.mounted) {
-							ScaffoldMessenger.of(context).showSnackBar(
-								const SnackBar(content: Text('Could not delete task')),
-							);
+							AppFeedback.showSnackBar(context, 'Could not delete task');
 						}
 					}
 				},

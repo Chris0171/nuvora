@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nuvora/core/constants/priority.dart';
 import 'package:nuvora/core/constants/repeat_type.dart';
 import 'package:nuvora/core/theme/app_design_system.dart';
+import 'package:nuvora/core/widgets/app_feedback.dart';
+import 'package:nuvora/core/widgets/app_motion.dart';
 import 'package:nuvora/features/tasks/application/controllers/task_provider.dart';
 import 'package:nuvora/features/tasks/domain/entities/task.dart';
 
@@ -32,6 +35,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 		}
 
 		setState(() => _isSaving = true);
+		HapticFeedback.lightImpact();
 
 		final newTask = Task(
 			id: DateTime.now().microsecondsSinceEpoch.toString(),
@@ -55,9 +59,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 			}
 		} catch (_) {
 			if (mounted) {
-				ScaffoldMessenger.of(context).showSnackBar(
-					const SnackBar(content: Text('Could not save task')),
-				);
+				AppFeedback.showSnackBar(context, 'Could not save task');
 			}
 		} finally {
 			if (mounted) setState(() => _isSaving = false);
@@ -129,20 +131,29 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 										onPressed: _isSaving ? null : _saveTask,
 										style: ElevatedButton.styleFrom(
 											elevation: _isSaving ? 0 : AppElevation.sm,
+											disabledBackgroundColor: AppColors.disabledBackground,
+											disabledForegroundColor: AppColors.textTertiary,
 										),
-										child: _isSaving
-												? const SizedBox(
-													height: 24,
-													width: 24,
-													child: CircularProgressIndicator(
-														strokeWidth: 2.5,
-														valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+										child: AnimatedSwitcher(
+											duration: AppMotion.shortDuration,
+											switchInCurve: AppMotion.curve,
+											switchOutCurve: AppMotion.curve,
+											child: _isSaving
+													? const SizedBox(
+														key: ValueKey('task-saving'),
+														height: 24,
+														width: 24,
+														child: CircularProgressIndicator(
+															strokeWidth: 2.5,
+															valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+														),
+													)
+													: const Text(
+														key: ValueKey('task-create-label'),
+														'Create Task',
+														style: AppTypography.labelLarge,
 													),
-												)
-												: const Text(
-													'Create Task',
-													style: AppTypography.labelLarge,
-												),
+										),
 									),
 								),
 							],

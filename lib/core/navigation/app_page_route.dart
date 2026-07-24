@@ -1,31 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:nuvora/core/widgets/app_motion.dart';
 
 class AppPageRoute<T> extends PageRouteBuilder<T> {
   AppPageRoute({
     required WidgetBuilder builder,
     super.settings,
-    Duration duration = const Duration(milliseconds: 340),
+    Duration duration = AppMotion.routeDuration,
   }) : super(
           transitionDuration: duration,
-          reverseTransitionDuration: const Duration(milliseconds: 280),
+          reverseTransitionDuration: AppMotion.reverseRouteDuration,
           pageBuilder: (context, animation, secondaryAnimation) => builder(context),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            final fade = CurvedAnimation(
+            final curvedAnimation = CurvedAnimation(
               parent: animation,
-              curve: Curves.easeOutCubic,
-              reverseCurve: Curves.easeInCubic,
+              curve: AppMotion.curve,
+              reverseCurve: AppMotion.curve,
             );
-            final scale = Tween<double>(begin: 0.97, end: 1).animate(
-              CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeOutBack,
-                reverseCurve: Curves.easeInCubic,
-              ),
-            );
+            final offsetAnimation = Tween<Offset>(
+              begin: AppMotion.subtleOffset,
+              end: Offset.zero,
+            ).animate(curvedAnimation);
             return FadeTransition(
-              opacity: fade,
-              child: ScaleTransition(
-                scale: scale,
+              opacity: curvedAnimation,
+              child: SlideTransition(
+                position: offsetAnimation,
                 child: child,
               ),
             );

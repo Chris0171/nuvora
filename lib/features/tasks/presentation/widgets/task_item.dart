@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:nuvora/core/constants/priority.dart';
 import 'package:nuvora/core/productivity/productivity_analyzer.dart';
 import 'package:nuvora/core/theme/app_design_system.dart';
+import 'package:nuvora/core/widgets/app_motion.dart';
 import 'package:nuvora/features/tasks/domain/entities/task.dart';
 
 class TaskItem extends StatefulWidget {
@@ -75,9 +76,9 @@ class _TaskItemState extends State<TaskItem> {
 			!widget.task.isCompleted;
 
 		return AnimatedScale(
-			duration: const Duration(milliseconds: 140),
+			duration: AppMotion.shortDuration,
 			scale: _pressed ? 0.985 : 1,
-			curve: Curves.easeOutCubic,
+			curve: AppMotion.curve,
 			child: Dismissible(
 				key: ValueKey('task-${widget.task.id}'),
 				background: const _SwipeBackground(
@@ -101,15 +102,15 @@ class _TaskItemState extends State<TaskItem> {
 					return false;
 				},
 				child: AnimatedContainer(
-					duration: const Duration(milliseconds: 180),
-					curve: Curves.easeOut,
+					duration: AppMotion.duration,
+					curve: AppMotion.curve,
 					decoration: BoxDecoration(
 						borderRadius: BorderRadius.circular(AppRadius.lg),
 						boxShadow: [
 							BoxShadow(
-								color: Colors.black.withValues(alpha: _pressed ? 0.12 : 0.06),
-								blurRadius: _pressed ? 18 : 10,
-								offset: Offset(0, _pressed ? 10 : 6),
+								color: Colors.black.withValues(alpha: _pressed ? 0.08 : 0.04),
+								blurRadius: _pressed ? 16 : 8,
+								offset: Offset(0, _pressed ? 8 : 4),
 							),
 						],
 					),
@@ -124,11 +125,15 @@ class _TaskItemState extends State<TaskItem> {
 								width: 1,
 							),
 						),
-						child: Material(
-							color: widget.task.isCompleted
-								? AppColors.surfaceSecondary
-								: AppColors.surface,
-							borderRadius: BorderRadius.circular(AppRadius.lg),
+						child: AnimatedContainer(
+							duration: AppMotion.duration,
+							curve: AppMotion.curve,
+							decoration: BoxDecoration(
+								color: widget.task.isCompleted
+									? AppColors.surfaceSecondary
+									: AppColors.surface,
+								borderRadius: BorderRadius.circular(AppRadius.lg),
+							),
 							child: InkWell(
 								onTap: widget.onTap,
 								onTapDown: (_) => setState(() => _pressed = true),
@@ -173,6 +178,12 @@ class _TaskItemState extends State<TaskItem> {
 												child: Column(
 													crossAxisAlignment: CrossAxisAlignment.start,
 													children: [
+														AnimatedOpacity(
+															duration: AppMotion.duration,
+															opacity: widget.task.isCompleted ? 0.8 : 1,
+															child: Column(
+																crossAxisAlignment: CrossAxisAlignment.start,
+																children: [
 														Text(
 															widget.task.title,
 															style: AppTypography.headlineLarge.copyWith(
@@ -255,6 +266,9 @@ class _TaskItemState extends State<TaskItem> {
 																],
 															),
 														],
+																],
+															),
+														),
 													],
 												),
 											),
@@ -292,8 +306,8 @@ class _AnimatedCheckmark extends StatelessWidget {
 		return GestureDetector(
 			onTap: () => onChanged?.call(!value),
 			child: AnimatedContainer(
-				duration: const Duration(milliseconds: 180),
-				curve: Curves.easeOutCubic,
+				duration: AppMotion.duration,
+				curve: AppMotion.curve,
 				width: 24,
 				height: 24,
 				decoration: BoxDecoration(
@@ -305,8 +319,9 @@ class _AnimatedCheckmark extends StatelessWidget {
 					),
 				),
 				child: AnimatedScale(
-					duration: const Duration(milliseconds: 160),
+					duration: AppMotion.shortDuration,
 					scale: value ? 1 : 0,
+					curve: AppMotion.curve,
 					child: const Icon(Icons.check, size: 14, color: Colors.white),
 				),
 			),

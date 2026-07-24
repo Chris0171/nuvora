@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nuvora/core/productivity/productivity_analyzer.dart';
 import 'package:nuvora/core/theme/app_design_system.dart';
+import 'package:nuvora/core/widgets/app_motion.dart';
+import 'package:nuvora/core/widgets/app_responsive.dart';
 import 'package:nuvora/features/notes/application/controllers/note_provider.dart';
 import 'package:nuvora/features/notes/domain/entities/note.dart';
 import 'package:nuvora/features/tasks/application/controllers/task_provider.dart';
@@ -16,6 +18,16 @@ class InsightsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final horizontalPadding = AppResponsive.pagePadding(context);
+    final maxWidth = AppResponsive.maxContentWidth(context);
+    final titleScale = AppResponsive.titleScale(context);
+    final productivityColumns = AppResponsive.adaptiveColumns(
+      context,
+      mobile: 1,
+      tablet: 2,
+      desktop: 3,
+    );
+
     final tasks = ref.watch(tasksProvider).maybeWhen(
       data: (items) => items,
       orElse: () => <Task>[],
@@ -59,17 +71,27 @@ class InsightsScreen extends ConsumerWidget {
 
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.lg,
-            AppSpacing.lg,
-            100,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Insights', style: AppTypography.displayLarge),
+        child: FadeSlideIn(
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth),
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                  horizontalPadding,
+                  AppSpacing.lg,
+                  horizontalPadding,
+                  100,
+                ),
+                child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Insights',
+                    style: AppTypography.displayLarge.copyWith(
+                      fontSize: AppTypography.displayLarge.fontSize! * titleScale,
+                    ),
+                  ),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'A modern snapshot of your execution rhythm and knowledge flow.',
@@ -79,7 +101,7 @@ class InsightsScreen extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.md),
               AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
+                duration: AppMotion.duration,
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.md,
                   vertical: AppSpacing.sm,
@@ -127,7 +149,7 @@ class InsightsScreen extends ConsumerWidget {
               _InsightsCard(
                 title: 'Productivity Score',
                 child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 240),
+                  duration: AppMotion.duration,
                   child: hasAnyData
                       ? Row(
                           key: const ValueKey('score-data'),
@@ -164,7 +186,7 @@ class InsightsScreen extends ConsumerWidget {
               _InsightsCard(
                 title: 'Weekly Overview',
                 child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 240),
+                  duration: AppMotion.duration,
                   child: hasAnyData
                       ? Column(
                           key: const ValueKey('weekly-data'),
@@ -183,8 +205,8 @@ class InsightsScreen extends ConsumerWidget {
                                         mainAxisAlignment: MainAxisAlignment.end,
                                         children: [
                                           AnimatedContainer(
-                                            duration: const Duration(milliseconds: 260),
-                                            curve: Curves.easeOutCubic,
+                                            duration: AppMotion.duration,
+                                            curve: AppMotion.curve,
                                             height: 12 + (weeklyBars[index] * 52),
                                             decoration: BoxDecoration(
                                               color: AppColors.primary.withValues(
@@ -220,31 +242,45 @@ class InsightsScreen extends ConsumerWidget {
               const SizedBox(height: AppSpacing.lg),
               _InsightsCard(
                 title: 'Streak',
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _MiniMetricCard(
-                        label: 'Current streak',
-                        value: hasAnyData ? currentStreakLabel : '--',
+                child: productivityColumns == 1
+                    ? Column(
+                        children: [
+                          _MiniMetricCard(
+                            label: 'Current streak',
+                            value: hasAnyData ? currentStreakLabel : '--',
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          _MiniMetricCard(
+                            label: 'Best streak',
+                            value: hasAnyData ? bestStreakLabel : '--',
+                          ),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          Expanded(
+                            child: _MiniMetricCard(
+                              label: 'Current streak',
+                              value: hasAnyData ? currentStreakLabel : '--',
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: _MiniMetricCard(
+                              label: 'Best streak',
+                              value: hasAnyData ? bestStreakLabel : '--',
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: _MiniMetricCard(
-                        label: 'Best streak',
-                        value: hasAnyData ? bestStreakLabel : '--',
-                      ),
-                    ),
-                  ],
                 ),
-              ),
               const SizedBox(height: AppSpacing.lg),
               _InsightsCard(
                 title: 'Productivity Cards',
                 child: GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
+                  crossAxisCount: productivityColumns,
                   crossAxisSpacing: AppSpacing.md,
                   mainAxisSpacing: AppSpacing.md,
                   childAspectRatio: 1.35,
@@ -261,7 +297,7 @@ class InsightsScreen extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.lg),
               AnimatedOpacity(
-                duration: const Duration(milliseconds: 220),
+                duration: AppMotion.duration,
                 opacity: hasAnyData ? 1 : 0.92,
                 child: Container(
                   width: double.infinity,
@@ -292,7 +328,10 @@ class InsightsScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-            ],
+                ],
+              ),
+            ),
+          ),
           ),
         ),
       ),
