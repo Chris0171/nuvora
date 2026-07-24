@@ -29,16 +29,13 @@ class TaskListScreen extends ConsumerWidget {
 									width: 84,
 									height: 84,
 									decoration: BoxDecoration(
-										gradient: const LinearGradient(
-											colors: [Color(0xFFE3F2FD), Color(0xFFF3F4F6)],
-											begin: Alignment.topLeft,
-											end: Alignment.bottomRight,
-										),
+										color: AppColors.surfaceSecondary,
+										border: Border.all(color: AppColors.border),
 										borderRadius: BorderRadius.circular(AppRadius.xl),
 									),
 									child: const Icon(
 										Icons.check_circle_outline,
-										size: 42,
+										size: 40,
 										color: AppColors.primary,
 									),
 								),
@@ -59,7 +56,7 @@ class TaskListScreen extends ConsumerWidget {
 								const SizedBox(height: AppSpacing.xs),
 								Text(
 									'Create your first task to get started',
-									style: AppTypography.bodyMedium.copyWith(
+									style: AppTypography.bodySmall.copyWith(
 										color: AppColors.textSecondary,
 									),
 									textAlign: TextAlign.center,
@@ -115,6 +112,13 @@ class TaskListScreen extends ConsumerWidget {
 								color: AppColors.surface,
 								borderRadius: BorderRadius.circular(AppRadius.xl),
 								border: Border.all(color: AppColors.border),
+								boxShadow: [
+									BoxShadow(
+										color: Colors.black.withValues(alpha: 0.03),
+										blurRadius: 8,
+										offset: const Offset(0, 3),
+									),
+								],
 							),
 							child: Column(
 								crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,6 +172,7 @@ class TaskListScreen extends ConsumerWidget {
 							emptyText: 'No completed tasks yet',
 							childBuilder: (task) => _taskTile(context, ref, task),
 						),
+						const SizedBox(height: AppSpacing.sm),
 					],
 				);
 			},
@@ -178,8 +183,16 @@ class TaskListScreen extends ConsumerWidget {
 					child: Column(
 						mainAxisAlignment: MainAxisAlignment.center,
 						children: [
-							const CircularProgressIndicator(
-								color: AppColors.primary,
+							Container(
+								padding: const EdgeInsets.all(AppSpacing.md),
+								decoration: BoxDecoration(
+									color: AppColors.surface,
+									borderRadius: BorderRadius.circular(AppRadius.xl),
+									border: Border.all(color: AppColors.border),
+								),
+								child: const CircularProgressIndicator(
+									color: AppColors.primary,
+								),
 							),
 							const SizedBox(height: AppSpacing.lg),
 							Text(
@@ -298,7 +311,28 @@ class _TaskPrioritySection extends StatelessWidget {
 		return Column(
 			crossAxisAlignment: CrossAxisAlignment.start,
 			children: [
-				Text(title, style: AppTypography.headlineSmall),
+				Row(
+					children: [
+						Text(title, style: AppTypography.headlineSmall),
+						if (tasks.isNotEmpty) ...[
+							const SizedBox(width: AppSpacing.sm),
+							Container(
+								padding: const EdgeInsets.symmetric(
+									horizontal: AppSpacing.sm,
+									vertical: AppSpacing.xs,
+								),
+								decoration: BoxDecoration(
+									color: AppColors.surfaceSecondary,
+									borderRadius: BorderRadius.circular(AppRadius.full),
+								),
+								child: Text(
+									'${tasks.length}',
+									style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary),
+								),
+							),
+						],
+					],
+				),
 				const SizedBox(height: AppSpacing.md),
 				if (tasks.isEmpty)
 					Padding(

@@ -42,11 +42,12 @@ class HomeScreen extends ConsumerWidget {
       .where((task) => task.dueDate != null && _isSameDay(task.dueDate!, now))
       .length;
     final notesToday = notes.where((note) => _isSameDay(note.createdAt, now)).length;
-    final completionRate = ProductivityAnalyzer.calculateCompletionRate(tasks);
-    final recommendedTask = ProductivityAnalyzer.getRecommendedTask(tasks);
     final focusScore = ProductivityAnalyzer.calculateFocusScore(tasks);
+    final completedCount = tasks.where((task) => task.isCompleted).length;
+    final recommendedTask = ProductivityAnalyzer.getRecommendedTask(tasks);
     final recentTasks = [...tasks]..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     final recentNotes = [...notes]..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    final hasRecentActivity = recentTasks.isNotEmpty || recentNotes.isNotEmpty;
 
     return Scaffold(
       body: SafeArea(
@@ -61,43 +62,45 @@ class HomeScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '${_greetingLabel()}, Christian',
-                style: AppTypography.headlineMedium.copyWith(
+                _greetingLabel(),
+                style: AppTypography.bodyMedium.copyWith(
                   color: AppColors.textSecondary,
                 ),
               ),
-              const SizedBox(height: AppSpacing.sm),
-              const Text('Nuvora dashboard', style: AppTypography.displaySmall),
+              const SizedBox(height: AppSpacing.xs),
+              const Text('Nuvora', style: AppTypography.displaySmall),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'Your daily command center',
+                style: AppTypography.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
               const SizedBox(height: AppSpacing.xl),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF1D4ED8), Color(0xFF1E3A8A)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(AppRadius.xl),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Daily Focus Score',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    const Text('Today\'s Focus', style: AppTypography.headlineMedium),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
                       '${(focusScore * 100).round()}%',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 34,
-                        fontWeight: FontWeight.bold,
+                      style: AppTypography.displaySmall,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      recommendedTask?.title ?? 'No priority task selected yet',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.md),
@@ -106,9 +109,9 @@ class HomeScreen extends ConsumerWidget {
                       child: LinearProgressIndicator(
                         minHeight: 8,
                         value: focusScore,
-                        backgroundColor: Colors.white24,
+                        backgroundColor: AppColors.surfaceSecondary,
                         valueColor: const AlwaysStoppedAnimation<Color>(
-                          AppColors.primaryLight,
+                          AppColors.primary,
                         ),
                       ),
                     ),
@@ -116,105 +119,7 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppRadius.xl),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Today summary', style: AppTypography.headlineMedium),
-                    const SizedBox(height: AppSpacing.md),
-                    _OverviewRow(label: 'Tasks due today', value: '$dueToday'),
-                    const SizedBox(height: AppSpacing.sm),
-                    _OverviewRow(label: 'Notes created', value: '$notesToday'),
-                    const SizedBox(height: AppSpacing.sm),
-                    _OverviewRow(
-                      label: 'Productivity percentage',
-                      value: '${(completionRate * 100).round()}%',
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppRadius.xl),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: recommendedTask == null
-                  ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('You should do next', style: AppTypography.headlineMedium),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        'No pending tasks right now. Great work.',
-                        style: AppTypography.bodyMedium.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  )
-                  : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('You should do next', style: AppTypography.headlineMedium),
-                      const SizedBox(height: AppSpacing.md),
-                      Text(recommendedTask.title, style: AppTypography.headlineSmall),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        ProductivityAnalyzer.getRecommendedUrgencyText(recommendedTask),
-                        style: AppTypography.bodyMedium,
-                      ),
-                    ],
-                  ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              const Text('Recent activity', style: AppTypography.headlineMedium),
-              const SizedBox(height: AppSpacing.md),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppRadius.xl),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Column(
-                  children: [
-                    ...recentTasks.take(2).map(
-                      (task) => _ActivityRow(
-                        icon: Icons.task_alt,
-                        title: task.title,
-                        subtitle: task.isCompleted ? 'Task completed' : 'Task updated',
-                      ),
-                    ),
-                    ...recentNotes.take(2).map(
-                      (note) => _ActivityRow(
-                        icon: Icons.note_alt_outlined,
-                        title: note.title,
-                        subtitle: 'Note updated',
-                      ),
-                    ),
-                    if (recentTasks.isEmpty && recentNotes.isEmpty)
-                      const _ActivityRow(
-                        icon: Icons.auto_awesome,
-                        title: 'No activity yet',
-                        subtitle: 'Create your first task or note to get started.',
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              const Text('Quick actions', style: AppTypography.headlineMedium),
+              const Text('Quick Actions', style: AppTypography.headlineMedium),
               const SizedBox(height: AppSpacing.md),
               Row(
                 children: [
@@ -229,7 +134,7 @@ class HomeScreen extends ConsumerWidget {
                         ref.invalidate(tasksProvider);
                       },
                       icon: const Icon(Icons.add),
-                      label: const Text('Add Task'),
+                      label: const Text('Create Task'),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),
@@ -244,10 +149,64 @@ class HomeScreen extends ConsumerWidget {
                         ref.invalidate(notesProvider);
                       },
                       icon: const Icon(Icons.note_add_outlined),
-                      label: const Text('Add Note'),
+                      label: const Text('Create Note'),
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              const Text('Summary', style: AppTypography.headlineMedium),
+              const SizedBox(height: AppSpacing.md),
+              GridView.count(
+                crossAxisCount: 2,
+                crossAxisSpacing: AppSpacing.md,
+                mainAxisSpacing: AppSpacing.md,
+                childAspectRatio: 1.7,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  _SummaryCard(title: 'Tasks', value: '${tasks.length}'),
+                  _SummaryCard(title: 'Completed', value: '$completedCount'),
+                  _SummaryCard(title: 'Notes', value: '${notes.length}'),
+                  _SummaryCard(
+                    title: 'Focus',
+                    value: '${(focusScore * 100).round()}%',
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              const Text('Recent activity', style: AppTypography.headlineMedium),
+              const SizedBox(height: AppSpacing.md),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.xl),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: hasRecentActivity
+                    ? Column(
+                        children: [
+                          ...recentTasks.take(2).map(
+                            (task) => _ActivityRow(
+                              icon: Icons.task_alt,
+                              title: task.title,
+                              subtitle: task.isCompleted
+                                  ? 'Completed today: $dueToday due'
+                                  : 'Task updated',
+                            ),
+                          ),
+                          ...recentNotes.take(2).map(
+                            (note) => _ActivityRow(
+                              icon: Icons.note_alt_outlined,
+                              title: note.title,
+                              subtitle: 'Notes today: $notesToday',
+                            ),
+                          ),
+                        ],
+                      )
+                    : const _RecentActivityEmptyState(),
               ),
             ],
           ),
@@ -278,7 +237,7 @@ class _ActivityRow extends StatelessWidget {
             width: 34,
             height: 34,
             decoration: BoxDecoration(
-              color: AppColors.primaryLight,
+              color: AppColors.surfaceSecondary,
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Icon(icon, size: 18, color: AppColors.primary),
@@ -309,23 +268,67 @@ class _ActivityRow extends StatelessWidget {
   }
 }
 
-class _OverviewRow extends StatelessWidget {
-  const _OverviewRow({required this.label, required this.value});
+class _SummaryCard extends StatelessWidget {
+  const _SummaryCard({required this.title, required this.value});
 
-  final String label;
+  final String title;
   final String value;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(
-          label,
-          style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
-        ),
-        const Spacer(),
-        Text(value, style: AppTypography.labelLarge),
-      ],
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+          ),
+          const Spacer(),
+          Text(value, style: AppTypography.headlineLarge),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecentActivityEmptyState extends StatelessWidget {
+  const _RecentActivityEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+      child: Column(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceSecondary,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+            ),
+            child: const Icon(
+              Icons.schedule_outlined,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          const Text('No recent activity', style: AppTypography.headlineSmall),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'Your updates will appear here once you create tasks or notes.',
+            textAlign: TextAlign.center,
+            style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+          ),
+        ],
+      ),
     );
   }
 }

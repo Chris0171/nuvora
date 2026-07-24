@@ -136,7 +136,7 @@ class _TaskItemState extends State<TaskItem> {
 								onTapUp: (_) => setState(() => _pressed = false),
 								borderRadius: BorderRadius.circular(AppRadius.lg),
 								child: Padding(
-									padding: const EdgeInsets.all(AppSpacing.lg),
+									padding: const EdgeInsets.all(AppSpacing.md),
 									child: Row(
 										crossAxisAlignment: CrossAxisAlignment.start,
 										children: [
@@ -175,13 +175,14 @@ class _TaskItemState extends State<TaskItem> {
 													children: [
 														Text(
 															widget.task.title,
-															style: AppTypography.headlineSmall.copyWith(
+															style: AppTypography.headlineLarge.copyWith(
 																decoration: widget.task.isCompleted
 																	? TextDecoration.lineThrough
 																	: null,
 																color: widget.task.isCompleted
 																	? AppColors.textTertiary
 																	: AppColors.textPrimary,
+																height: 1.2,
 															),
 															maxLines: 2,
 															overflow: TextOverflow.ellipsis,
