@@ -22,6 +22,7 @@ class SettingsScreen extends ConsumerWidget {
 		);
 		final completionRate = ProductivityAnalyzer.calculateCompletionRate(tasks);
 		final completionPercentage = (completionRate * 100).round();
+		final pendingTasks = tasks.where((task) => !task.isCompleted).length;
 
 		return Scaffold(
 			body: SafeArea(
@@ -33,11 +34,28 @@ class SettingsScreen extends ConsumerWidget {
 						100,
 					),
 					children: [
-						const Text('Settings', style: AppTypography.displaySmall),
+						const Text('Settings', style: AppTypography.displayLarge),
 						const SizedBox(height: AppSpacing.sm),
 						Text(
-							'Configure your product experience',
+							'Calm, polished controls for how Nuvora feels every day.',
 							style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
+						),
+						const SizedBox(height: AppSpacing.md),
+						AnimatedContainer(
+							duration: const Duration(milliseconds: 220),
+							padding: const EdgeInsets.symmetric(
+								horizontal: AppSpacing.md,
+								vertical: AppSpacing.sm,
+							),
+							decoration: BoxDecoration(
+								color: AppColors.surface,
+								borderRadius: BorderRadius.circular(AppRadius.full),
+								border: Border.all(color: AppColors.border),
+							),
+							child: Text(
+								'Workspace profile',
+								style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary),
+							),
 						),
 						const SizedBox(height: AppSpacing.lg),
 						const _ProfileCard(),
@@ -46,6 +64,7 @@ class SettingsScreen extends ConsumerWidget {
 							tasksManaged: tasks.length,
 							notesStored: notes.length,
 							completionPercentage: completionPercentage,
+							pendingTasks: pendingTasks,
 						),
 					],
 				),
@@ -59,61 +78,124 @@ class _SettingsContent extends StatelessWidget {
 		required this.tasksManaged,
 		required this.notesStored,
 		required this.completionPercentage,
+		required this.pendingTasks,
 	});
 
 	final int tasksManaged;
 	final int notesStored;
 	final int completionPercentage;
+	final int pendingTasks;
 
 	@override
 	Widget build(BuildContext context) {
 		return Column(
 			children: [
 				_SettingsGroup(
-					title: 'Account',
-					items: [
-						const _SettingsItemData('Profile', Icons.person_outline),
-						const _SettingsItemData('Plan & billing', Icons.credit_card_outlined),
-						const _SettingsItemData('Security', Icons.lock_outline),
-					],
-				),
-				const SizedBox(height: AppSpacing.lg),
-				_SettingsGroup(
 					title: 'Appearance',
-					items: const [
-						_SettingsItemData('Theme', Icons.dark_mode_outlined),
-						_SettingsItemData('Typography', Icons.text_fields_outlined),
-						_SettingsItemData('Layout density', Icons.space_dashboard_outlined),
+					subtitle: 'A visual layer for theme, color and reading comfort.',
+					items: [
+						const _SettingsItemData(
+							'Theme',
+							Icons.dark_mode_outlined,
+							trailingText: 'System',
+							enabled: false,
+						),
+						const _SettingsItemData(
+							'Accent Color',
+							Icons.palette_outlined,
+							trailingText: 'Soon',
+							enabled: false,
+						),
+						const _SettingsItemData(
+							'Type Size',
+							Icons.text_fields_outlined,
+							trailingText: 'Default',
+							enabled: false,
+						),
 					],
 				),
 				const SizedBox(height: AppSpacing.lg),
-				_SettingsGroup(
+				const _ToggleGroup(
 					title: 'Notifications',
-					items: const [
-						_SettingsItemData('Push alerts', Icons.notifications_none),
-						_SettingsItemData('Reminder cadence', Icons.alarm_outlined),
-						_SettingsItemData('Digest summary', Icons.summarize_outlined),
+					subtitle: 'Visual placeholders for reminders and daily summaries.',
+					items: [
+						_ToggleItemData('Daily reminders', true),
+						_ToggleItemData('Evening summary', false),
+						_ToggleItemData('Priority nudges', true),
 					],
 				),
 				const SizedBox(height: AppSpacing.lg),
 				_SettingsGroup(
 					title: 'Data & Backup',
+					subtitle: 'Storage and export surfaces presented as non-functional UI.',
 					items: const [
-						_SettingsItemData('Auto backup', Icons.cloud_outlined),
-						_SettingsItemData('Export workspace', Icons.download_outlined),
-						_SettingsItemData('Storage usage', Icons.storage_outlined),
+						_SettingsItemData(
+							'Local storage',
+							Icons.storage_outlined,
+							trailingText: 'On device',
+							enabled: false,
+						),
+						_SettingsItemData(
+							'Export',
+							Icons.download_outlined,
+							trailingText: 'Unavailable',
+							enabled: false,
+						),
+						_SettingsItemData(
+							'Backup',
+							Icons.cloud_outlined,
+							trailingText: 'Placeholder',
+							enabled: false,
+						),
 					],
 				),
 				const SizedBox(height: AppSpacing.lg),
 				_SettingsGroup(
-					title: 'About Nuvora',
+					title: 'About',
+					subtitle: 'Product details and placeholders for public information.',
 					items: [
-						const _SettingsItemData('Version', Icons.info_outline),
-						const _SettingsItemData('Help center', Icons.help_outline),
-						const _SettingsItemData('Privacy policy', Icons.policy_outlined),
-						_SettingsItemData('Tasks managed: $tasksManaged', Icons.task_alt),
-						_SettingsItemData('Notes stored: $notesStored', Icons.note_alt_outlined),
-						_SettingsItemData('Completion: $completionPercentage%', Icons.bar_chart_outlined),
+						const _SettingsItemData(
+							'Version',
+							Icons.info_outline,
+							trailingText: '1.0.0',
+							enabled: false,
+						),
+						const _SettingsItemData(
+							'License',
+							Icons.gavel_outlined,
+							trailingText: 'Placeholder',
+							enabled: false,
+						),
+						const _SettingsItemData(
+							'Developer',
+							Icons.code_outlined,
+							trailingText: 'Nuvora Studio',
+							enabled: false,
+						),
+						_SettingsItemData(
+							'Completed',
+							Icons.task_alt,
+							trailingText: '${tasksManaged - pendingTasks}',
+							enabled: false,
+						),
+						_SettingsItemData(
+							'Pending',
+							Icons.pending_actions_outlined,
+							trailingText: '$pendingTasks',
+							enabled: false,
+						),
+						_SettingsItemData(
+							'Notes',
+							Icons.note_alt_outlined,
+							trailingText: '$notesStored',
+							enabled: false,
+						),
+						_SettingsItemData(
+							'Focus',
+							Icons.bar_chart_outlined,
+							trailingText: '$completionPercentage%',
+							enabled: false,
+						),
 					],
 				),
 				const SizedBox(height: AppSpacing.xl),
@@ -134,22 +216,34 @@ class _ProfileCard extends StatelessWidget {
 				color: AppColors.surface,
 				borderRadius: BorderRadius.circular(AppRadius.xl),
 				border: Border.all(color: AppColors.border),
+				boxShadow: [
+					BoxShadow(
+						color: Colors.black.withValues(alpha: 0.03),
+						blurRadius: 10,
+						offset: const Offset(0, 4),
+					),
+				],
 			),
 			child: const Row(
 				children: [
 					CircleAvatar(
-						radius: 24,
-						backgroundColor: AppColors.primaryLight,
+						radius: 28,
+						backgroundColor: AppColors.surfaceSecondary,
 						child: Icon(Icons.person, color: AppColors.primary),
 					),
 					SizedBox(width: AppSpacing.md),
-					Column(
-						crossAxisAlignment: CrossAxisAlignment.start,
-						children: [
-							Text('Nuvora User', style: AppTypography.headlineSmall),
-							SizedBox(height: AppSpacing.xs),
-							Text('Productivity plan', style: AppTypography.bodySmall),
-						],
+					Expanded(
+						child: Column(
+							crossAxisAlignment: CrossAxisAlignment.start,
+							children: [
+								Text('Nuvora User', style: AppTypography.headlineMedium),
+								SizedBox(height: AppSpacing.xs),
+								Text(
+									'Focused on clarity, planning, and steady progress.',
+									style: AppTypography.bodySmall,
+								),
+							],
+						),
 					),
 				],
 			),
@@ -158,10 +252,15 @@ class _ProfileCard extends StatelessWidget {
 }
 
 class _SettingsGroup extends StatelessWidget {
-	const _SettingsGroup({required this.title, required this.items});
+	const _SettingsGroup({
+		required this.title,
+		required this.items,
+		this.subtitle,
+	});
 
 	final String title;
 	final List<_SettingsItemData> items;
+	final String? subtitle;
 
 	@override
 	Widget build(BuildContext context) {
@@ -171,11 +270,27 @@ class _SettingsGroup extends StatelessWidget {
 				color: AppColors.surface,
 				borderRadius: BorderRadius.circular(AppRadius.xl),
 				border: Border.all(color: AppColors.border),
+				boxShadow: [
+					BoxShadow(
+						color: Colors.black.withValues(alpha: 0.03),
+						blurRadius: 10,
+						offset: const Offset(0, 4),
+					),
+				],
 			),
 			child: Column(
 				crossAxisAlignment: CrossAxisAlignment.start,
 				children: [
 					Text(title, style: AppTypography.headlineSmall),
+					if (subtitle != null) ...[
+						const SizedBox(height: AppSpacing.xs),
+						Text(
+							subtitle!,
+							style: AppTypography.bodySmall.copyWith(
+								color: AppColors.textSecondary,
+							),
+						),
+					],
 					const SizedBox(height: AppSpacing.md),
 					...items.map((item) => _SettingsRow(item: item)),
 				],
@@ -195,11 +310,54 @@ class _SettingsRow extends StatelessWidget {
 			padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
 			child: Row(
 				children: [
-					Icon(item.icon, size: 18, color: AppColors.primary),
+					Container(
+						width: 34,
+						height: 34,
+						decoration: BoxDecoration(
+							color: item.enabled
+								? AppColors.primaryLight.withValues(alpha: 0.35)
+								: AppColors.surfaceSecondary,
+							borderRadius: BorderRadius.circular(AppRadius.md),
+						),
+						child: Icon(
+							item.icon,
+							size: 18,
+							color: item.enabled ? AppColors.primary : AppColors.textSecondary,
+						),
+					),
 					const SizedBox(width: AppSpacing.md),
-					Text(item.label, style: AppTypography.bodyMedium),
+					Expanded(
+						child: Text(
+							item.label,
+							style: AppTypography.bodyMedium.copyWith(
+								color: item.enabled ? AppColors.textPrimary : AppColors.textSecondary,
+							),
+						),
+					),
+					if (item.trailingText != null) ...[
+						Container(
+							padding: const EdgeInsets.symmetric(
+								horizontal: AppSpacing.sm,
+								vertical: AppSpacing.xs,
+							),
+							decoration: BoxDecoration(
+								color: AppColors.surfaceSecondary,
+								borderRadius: BorderRadius.circular(AppRadius.full),
+							),
+							child: Text(
+								item.trailingText!,
+								style: AppTypography.labelSmall.copyWith(
+									color: AppColors.textSecondary,
+								),
+							),
+						),
+						const SizedBox(width: AppSpacing.sm),
+					],
 					const Spacer(),
-					const Icon(Icons.chevron_right, color: AppColors.textTertiary),
+					Icon(
+						Icons.chevron_right,
+						color: item.enabled ? AppColors.textTertiary : AppColors.disabled,
+					),
 				],
 			),
 		);
@@ -216,10 +374,17 @@ class _NuvoraProCard extends StatelessWidget {
 			decoration: BoxDecoration(
 				borderRadius: BorderRadius.circular(AppRadius.xl),
 				gradient: const LinearGradient(
-					colors: [Color(0xFF0F172A), Color(0xFF1D4ED8)],
+					colors: [Color(0xFF111827), Color(0xFF374151)],
 					begin: Alignment.topLeft,
 					end: Alignment.bottomRight,
 				),
+				boxShadow: [
+					BoxShadow(
+						color: Colors.black.withValues(alpha: 0.08),
+						blurRadius: 18,
+						offset: const Offset(0, 8),
+					),
+				],
 			),
 			child: const Column(
 				crossAxisAlignment: CrossAxisAlignment.start,
@@ -228,16 +393,25 @@ class _NuvoraProCard extends StatelessWidget {
 						'Nuvora Pro',
 						style: TextStyle(
 							color: Colors.white,
-							fontSize: 18,
+							fontSize: 20,
 							fontWeight: FontWeight.w700,
 						),
 					),
 					SizedBox(height: AppSpacing.sm),
-					Text('Unlimited productivity insights', style: TextStyle(color: Colors.white70)),
+					Text(
+						'Premium planning tools designed for deeper clarity and momentum.',
+						style: TextStyle(color: Colors.white70),
+					),
+					SizedBox(height: AppSpacing.md),
+					Text('Advanced Insights', style: TextStyle(color: Colors.white70)),
 					SizedBox(height: AppSpacing.xs),
-					Text('Advanced analytics', style: TextStyle(color: Colors.white70)),
+					Text('Unlimited Statistics', style: TextStyle(color: Colors.white70)),
 					SizedBox(height: AppSpacing.xs),
-					Text('Smart reminders', style: TextStyle(color: Colors.white70)),
+					Text('Smart Planning', style: TextStyle(color: Colors.white70)),
+					SizedBox(height: AppSpacing.xs),
+					Text('Cloud Sync', style: TextStyle(color: Colors.white70)),
+					SizedBox(height: AppSpacing.xs),
+					Text('AI Assistant', style: TextStyle(color: Colors.white70)),
 				],
 			),
 		);
@@ -245,8 +419,94 @@ class _NuvoraProCard extends StatelessWidget {
 }
 
 class _SettingsItemData {
-	const _SettingsItemData(this.label, this.icon);
+	const _SettingsItemData(
+		this.label,
+		this.icon, {
+		this.trailingText,
+		this.enabled = true,
+	});
 
 	final String label;
 	final IconData icon;
+	final String? trailingText;
+	final bool enabled;
+}
+
+class _ToggleGroup extends StatelessWidget {
+	const _ToggleGroup({
+		required this.title,
+		required this.subtitle,
+		required this.items,
+	});
+
+	final String title;
+	final String subtitle;
+	final List<_ToggleItemData> items;
+
+	@override
+	Widget build(BuildContext context) {
+		return Container(
+			padding: const EdgeInsets.all(AppSpacing.lg),
+			decoration: BoxDecoration(
+				color: AppColors.surface,
+				borderRadius: BorderRadius.circular(AppRadius.xl),
+				border: Border.all(color: AppColors.border),
+				boxShadow: [
+					BoxShadow(
+						color: Colors.black.withValues(alpha: 0.03),
+						blurRadius: 10,
+						offset: const Offset(0, 4),
+					),
+				],
+			),
+			child: Column(
+				crossAxisAlignment: CrossAxisAlignment.start,
+				children: [
+					Text(title, style: AppTypography.headlineSmall),
+					const SizedBox(height: AppSpacing.xs),
+					Text(
+						subtitle,
+						style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+					),
+					const SizedBox(height: AppSpacing.md),
+					...items.map((item) => _ToggleRow(item: item)),
+				],
+			),
+		);
+	}
+}
+
+class _ToggleRow extends StatelessWidget {
+	const _ToggleRow({required this.item});
+
+	final _ToggleItemData item;
+
+	@override
+	Widget build(BuildContext context) {
+		return Padding(
+			padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+			child: Row(
+				children: [
+					Expanded(
+						child: Text(item.label, style: AppTypography.bodyMedium),
+					),
+					IgnorePointer(
+						child: Switch(
+							value: item.value,
+							onChanged: (_) {},
+							activeThumbColor: AppColors.primary,
+							activeTrackColor: AppColors.primaryLight,
+						),
+					),
+				],
+			),
+		);
+	}
+}
+
+class _ToggleItemData {
+	const _ToggleItemData(this.label, this.value);
+
+	final String label;
+	final bool value;
 }
