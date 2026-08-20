@@ -1,0 +1,502 @@
+ROADMAP MAESTRO DE NUVORA
+🟢 BLOQUE 1 — Núcleo de Tasks
+Fase 4 — Completar Tasks
+
+4A — Task Detail + Edición
+
+Conectar TaskDetailScreen.
+Abrir detalle desde una tarea.
+Editar título.
+Editar descripción.
+Editar prioridad.
+Guardar mediante updateTask.
+Mantener SQLite/repository/controller existentes.
+Tests.
+
+4B — Due Date
+
+Seleccionar fecha límite.
+Mostrarla correctamente.
+Editarla.
+Persistir dueDate.
+Estados sin fecha/con fecha.
+Tests.
+
+4C — Categorías
+
+Definir flujo real de categorías.
+Crear/seleccionar categoría.
+Asociar categoría a Task.
+Mostrar categoría.
+Persistencia.
+Tests.
+
+4D — Recurring Tasks
+
+Utilizar RepeatType existente.
+UI para seleccionar repetición.
+Daily / Weekly / Monthly, según lo que soporte actualmente el dominio.
+Persistir configuración.
+Preparar comportamiento de generación/reprogramación.
+Tests.
+
+4E — Archive + Task Lifecycle
+
+Archivar/desarchivar.
+Separar activas/archivadas.
+Integrarlo con detalle/lista.
+Mantener soft delete.
+Tests.
+
+4F — Tasks QA
+
+Auditar todo Tasks.
+Loading/empty/error states.
+Navegación.
+Accesibilidad.
+Tests.
+No introducir nueva arquitectura innecesaria.
+🟢 BLOQUE 2 — Notes
+Fase 5 — Completar Notes
+
+5A — Note Detail + Edición
+
+Abrir una nota existente.
+Conectar CreateNoteScreen(initialNote).
+Editar título/contenido.
+Guardar mediante updateNote.
+Tests.
+
+5B — Pin / Unpin
+
+Acción para fijar nota.
+Acción para quitar fijación.
+Actualización inmediata de UI.
+Persistencia SQLite.
+Tests.
+
+5C — Archive
+
+Archivar/desarchivar.
+Vista de archivadas.
+Persistencia.
+Tests.
+
+5D — Notes UX
+
+Mejorar búsqueda.
+Estados loading/error/empty.
+Ordenación.
+Feedback visual.
+Accesibilidad.
+
+5E — Notes QA
+
+Auditoría completa.
+Tests unit/widget/integration.
+flutter analyze.
+flutter test.
+🔵 BLOQUE 3 — Reminders
+Fase 6 — Reminders UI
+
+6A — Reminder List
+
+Crear pantalla funcional.
+Listar reminders reales desde Riverpod.
+Loading/empty/error.
+Eliminar/desactivar.
+
+6B — Create Reminder
+
+Crear reminder desde UI.
+Título.
+Descripción.
+Fecha.
+Hora.
+Tipo.
+Activación/desactivación.
+
+6C — Edit Reminder
+
+Abrir reminder.
+Modificarlo.
+Guardar.
+Eliminar.
+Activar/desactivar.
+
+6D — Integración con Tasks/Notes
+
+relatedItemId.
+Crear reminder desde una tarea/nota cuando tenga sentido.
+Navegación entre entidades.
+
+6E — Reminders QA
+
+Tests widget.
+Tests de integración.
+Auditoría completa.
+Validación de persistencia.
+🔴 BLOQUE 4 — Notifications
+
+Aquí empieza una parte importante porque convierte los reminders en algo realmente útil.
+
+Fase 7 — Sistema de notificaciones
+
+7A — Notification Service
+
+Implementar servicio real.
+Android/iOS.
+Inicialización.
+Canales/categorías necesarias.
+Manejo de errores.
+
+7B — Permissions
+
+Solicitar permisos correctamente.
+Estados permitidos/denegados.
+UX para permisos.
+
+7C — Scheduling
+
+Programar notificaciones.
+Cancelarlas.
+Actualizarlas.
+Reprogramarlas.
+
+7D — Reminder → Notification
+
+Conectar Reminder.scheduledAt.
+Crear notificación al crear reminder.
+Actualizar al modificar.
+Cancelar al eliminar/desactivar.
+
+7E — Recurring Notifications
+
+Integrar recurrencia de reminders.
+Evitar duplicados.
+Reprogramación segura.
+
+7F — Notification QA
+
+Tests.
+Manejo de errores.
+Android/iOS.
+Casos de reinicio de aplicación.
+Verificación de permisos.
+🟣 BLOQUE 5 — Calendar / Planning
+Fase 8 — Planning
+
+8A — Calendar UI
+
+Calendario moderno.
+Navegación por día/semana/mes.
+Diseño consistente con Nuvora.
+
+8B — Tasks en Calendar
+
+Mostrar tareas con due date.
+
+8C — Reminders en Calendar
+
+Mostrar reminders.
+
+8D — Daily Planning
+
+Vista del día.
+Tareas pendientes.
+Reminders.
+Acciones rápidas.
+
+8E — Calendar QA
+
+Navegación.
+Fechas.
+Estados vacíos.
+Rendimiento.
+Tests.
+⚙️ BLOQUE 6 — Settings
+Fase 9 — Settings MVP
+
+9A — Settings Architecture
+
+Auditar UserSettings.
+Completar repository/datasource/controller.
+Solo lo necesario.
+Persistencia local.
+
+9B — Theme
+
+System.
+Light.
+Dark.
+Persistencia.
+
+9C — Appearance
+
+Accent color.
+Type size si realmente aporta valor.
+Persistencia.
+
+9D — Notifications Settings
+
+Activar/desactivar notificaciones.
+Preferencias relacionadas.
+
+9E — Data
+
+Export.
+Import/backup, si entra en MVP.
+Confirmaciones de acciones destructivas.
+
+9F — Settings QA
+
+Tests.
+Persistencia.
+Reinicio de aplicación.
+Verificación de UI.
+🌙 BLOQUE 7 — Design System / Dark Mode
+Fase 10 — Consolidación visual
+
+10A — Unificar Theme Systems
+
+Resolver la coexistencia de:
+app_theme.dart
+app_design_system.dart
+No duplicar tokens.
+
+10B — Dark Mode Real
+
+Eliminar colores hardcoded problemáticos.
+Light/Dark consistente.
+
+10C — Accessibility
+
+Contraste.
+Tamaños.
+Touch targets.
+Semantics.
+
+10D — Responsive
+
+Móvil.
+Tablet.
+Desktop/Web.
+
+10E — UI QA
+
+Revisar Home.
+Tasks.
+Notes.
+Reminders.
+Calendar.
+Insights.
+Settings.
+🔎 BLOQUE 8 — Search & Filters
+Fase 11
+
+11A — Global Search
+
+Buscar Tasks + Notes + Reminders.
+
+11B — Task Filters
+
+Estado.
+Prioridad.
+Categoría.
+Fecha.
+
+11C — Notes Filters
+
+Pinned.
+Archived.
+Fecha.
+
+11D — Reminder Filters
+
+Activos.
+Fecha.
+Tipo.
+
+11E — Search UX
+
+Historial/recent search si aporta.
+Empty states.
+Resultados agrupados.
+
+11F — QA
+
+📊 BLOQUE 9 — Insights
+Fase 12 — Insights reales
+
+12A — Analytics Domain
+
+Crear dominio propio para Insights.
+Sacar lógica analítica de core.
+
+12B — Historical Data
+
+Persistir snapshots necesarios.
+
+12C — Time Filters
+
+Día.
+Semana.
+Mes.
+Año.
+
+12D — Productivity Metrics
+
+Completion.
+Consistency.
+Streak.
+Focus.
+Tendencias.
+
+12E — Charts
+
+Gráficos basados en datos reales.
+
+12F — Recommendations
+
+Recomendaciones basadas en comportamiento real.
+
+12G — Insights Tests
+
+🚀 BLOQUE 10 — Onboarding
+Fase 13
+
+13A — Onboarding Persistence
+
+Guardar si ya fue completado.
+
+13B — Personalization
+
+Objetivo del usuario.
+Preferencias iniciales.
+
+13C — First Task
+
+Guiar al usuario hacia su primera tarea.
+
+13D — First Reminder
+
+Introducir reminders.
+
+13E — First-Week Experience
+
+Preparar el loop de productividad.
+
+13F — Onboarding QA
+
+💰 BLOQUE 11 — Monetización
+
+Esta fase la dejaría después de que el producto principal funcione realmente bien.
+
+Fase 14 — Nuvora Pro
+
+14A — Definir Free vs Pro
+
+Decidir exactamente qué obtiene cada usuario.
+
+14B — Entitlement System
+
+isPremium.
+Estado de suscripción.
+Persistencia/validación.
+
+14C — Premium UI
+
+Paywall.
+Upgrade.
+Comparación Free/Pro.
+
+14D — Monetización real
+
+Implementar plataforma elegida.
+Suscripciones.
+Restaurar compras.
+
+14E — Premium Features
+
+Potenciales funciones Pro:
+
+Recurring tasks avanzadas.
+Insights avanzados.
+Estadísticas históricas.
+Categorías avanzadas.
+Calendar avanzado.
+Backup/sync.
+Personalización.
+
+14F — Monetization QA
+
+🧪 BLOQUE 12 — QA PROFESIONAL
+Fase 15
+
+15A — Tests faltantes
+
+Home.
+Insights.
+Settings.
+Reminders UI.
+Notifications.
+Calendar.
+Onboarding.
+
+15B — Integration Testing
+
+Flujos completos.
+
+Ejemplo:
+
+Create Task → Due Date → Reminder → Notification
+
+15C — Error Handling
+
+15D — Accessibility
+
+15E — Performance
+
+15F — Memory / lifecycle
+
+15G — Final Regression
+
+Objetivo:
+
+Todo verde antes de release.
+
+📱 BLOQUE 13 — Release
+Fase 16
+
+16A — Android Release
+
+App ID.
+Icon.
+Splash.
+Signing.
+Versioning.
+
+16B — iOS Release
+
+Bundle ID.
+Signing.
+App Store configuration.
+
+16C — Store Assets
+
+Screenshots.
+Description.
+Keywords.
+Branding.
+
+16D — Privacy
+
+Privacy Policy.
+Terms.
+Data disclosure.
+
+16E — Analytics / Crash Reporting
+
+16F — Production QA
+
+16G — Release

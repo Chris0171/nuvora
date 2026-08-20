@@ -11,6 +11,7 @@ import 'package:nuvora/core/widgets/app_responsive.dart';
 import 'package:nuvora/features/tasks/application/controllers/task_provider.dart';
 import 'package:nuvora/features/tasks/domain/entities/task.dart';
 import 'package:nuvora/features/tasks/presentation/screens/create_task_screen.dart';
+import 'package:nuvora/features/tasks/presentation/screens/task_detail_screen.dart';
 import 'package:nuvora/features/tasks/presentation/widgets/task_item.dart';
 
 class TaskListScreen extends ConsumerWidget {
@@ -202,6 +203,13 @@ class TaskListScreen extends ConsumerWidget {
 			child: TaskItem(
 				key: ValueKey(task.id),
 				task: task,
+				onTap: () {
+					Navigator.of(context).push(
+						AppPageRoute<void>(
+							builder: (_) => TaskDetailScreen(task: task),
+						),
+					);
+				},
 				onToggleCompleted: (value) async {
 					try {
 						HapticFeedback.selectionClick();

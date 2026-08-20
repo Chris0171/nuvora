@@ -1,0 +1,1180 @@
+# NUVORA — PROJECT STATE REPORT
+
+## 1. RESUMEN GENERAL DEL PROYECTO
+
+- Estado actual de Flutter:
+	Proyecto Flutter multiplataforma con MaterialApp, Material 3 habilitado en ThemeData y ProviderScope global.
+- Arquitectura utilizada:
+	Feature-first con separación parcial en presentation / application/controllers / domain / data.
+- Gestión de estado:
+	Riverpod con Provider, FutureProvider y un StateProvider para la búsqueda de notas.
+- Persistencia:
+	Persistencia local SQLite implementada de forma real para Tasks, Notes y Reminders.
+- Base de datos:
+	Tres bases SQLite separadas por feature: `nuvora_tasks.db`, `nuvora_notes.db`, `nuvora_reminders.db`.
+- Navegación:
+	AppShell con IndexedStack y barra de navegación inferior personalizada para Home, Tasks, Notes, Insights y Settings.
+- Sistema de temas:
+	Hay dos capas coexistiendo: ThemeData en `core/theme/app_theme.dart` y un design system de uso masivo en `core/theme/app_design_system.dart`.
+- Soporte light/dark:
+	Light/dark definido en MaterialApp, pero la UI usa en gran parte colores fijos del design system, así que el dark mode no está aplicado de forma consistente en todas las pantallas.
+- Plataformas objetivo:
+	Android, iOS, Web, Linux, macOS y Windows por la estructura real del proyecto.
+- Dependencias principales:
+	Flutter, flutter_riverpod, sqflite, sqflite_common_ffi, path, uuid.
+- Estado actual de tests:
+	196 tests pasando.
+- Estado de flutter analyze:
+	Limpio, sin issues.
+
+## 2. ESTRUCTURA REAL DEL PROYECTO
+
+Árbol resumido de `lib/`:
+
+```text
+lib/
+	main.dart
+	core/
+		constants/
+		database/
+		errors/
+		navigation/
+		productivity/
+		theme/
+		utils/
+		widgets/
+	features/
+		home/
+			presentation/
+		insights/
+			presentation/
+		notes/
+			domain/
+			data/
+			application/controllers/
+			presentation/screens/
+			presentation/widgets/
+		notifications/
+			domain/
+			data/
+			application/controllers/
+			presentation/screens/
+			presentation/widgets/
+		onboarding/
+			presentation/
+		reminders/
+			domain/
+			data/
+			application/controllers/
+			presentation/screens/
+			presentation/widgets/
+		settings/
+			domain/
+			data/
+			application/controllers/
+			presentation/screens/
+			presentation/widgets/
+		tasks/
+			domain/
+			data/
+			application/controllers/
+			presentation/screens/
+			presentation/widgets/
+	services/
+		alarm_service.dart
+		database_service.dart
+		notification_service.dart
+		permission_service.dart
+```
+
+Resumen por feature:
+
+- Tasks:
+	Tiene domain, data, controllers/providers, repositories, datasources SQLite, screens, widgets y tests amplios.
+- Notes:
+	Tiene domain, data, controllers/providers, repositories, datasources SQLite, screens, widgets y tests amplios.
+- Reminders:
+	Tiene domain, data, controllers/providers, repositories, datasource SQLite y tests, pero la presentation está vacía.
+- Home:
+	Solo presentation screen, sin domain/data propios.
+- Insights:
+	Solo presentation screen, sin domain/data propios.
+- Settings:
+	Tiene domain/data/application/presentation, pero solo la screen principal está realmente implementada; el resto esqueleto o vacío.
+- Notifications:
+	Tiene carpetas de domain/data/application/presentation, pero la implementación real es mínima y no funcional.
+- Onboarding:
+	Solo presentation, implementada.
+
+Tests reales en `test/`:
+
+- Tasks: unit, integration, widget y benchmark.
+- Notes: unit, integration, widget y benchmark.
+- Reminders: unit, integration y benchmark.
+- Smoke global: `test/widget_test.dart`.
+
+## 3. ESTADO DE CADA FEATURE
+
+### FEATURE: Tasks
+
+Estado:
+PARCIAL
+
+Domain:
+- Entidad:
+	`Task` implementada con `id`, `title`, `description`, `createdAt`, `updatedAt`, `dueDate`, `isCompleted`, `priority`, `categoryId`, `repeatType`, `archived`, `deletedAt`.
+- Enums:
+	`Priority` y `RepeatType` reales y usados.
+- Validaciones:
+	No hay validación fuerte en la entidad; la validación visible está principalmente en UI.
+
+Data:
+- Repository:
+	`TaskRepositoryImpl` implementado.
+- Datasource:
+	`TaskDataSource` abstracto y `SQLiteTaskDataSource` concreto implementados.
+- SQLite:
+	Sí, real.
+- Migraciones:
+	Sí, hasta versión 3.
+- Soft delete:
+	Sí, mediante `deleted_at`.
+- Índices:
+	Sí, sobre `created_at`, `deleted_at` y partial index para activos.
+
+State management:
+- Controller:
+	`TaskController` implementado y delgado.
+- Providers:
+	`taskDataSourceProvider`, `taskRepositoryProvider`, `taskControllerProvider`, `tasksProvider`.
+
+UI:
+- Screens:
+	`home_screen.dart`, `task_list_screen.dart`, `create_task_screen.dart`, `task_detail_screen.dart`, `tasks_screen.dart`.
+- Widgets:
+	`task_item.dart`.
+- Navegación:
+	La tab Tasks sí está conectada en AppShell; `TaskDetailScreen` existe pero no se observa flujo conectado hacia ella.
+- Estados loading:
+	Sí.
+- Estados empty:
+	Sí.
+- Estados error:
+	Sí.
+
+Tests:
+- Unit:
+	Sí.
+- Integration:
+	Sí, SQLite datasource.
+- Widget:
+	Sí.
+- Benchmark:
+	Sí.
+
+Funcionalidades realmente operativas:
+- Crear tarea.
+- Listar tareas.
+- Persistir tareas en SQLite.
+- Completar y descompletar tarea.
+- Soft delete.
+- Ordenación por `created_at DESC`.
+- UUID normalization en repository.
+- `updatedAt`, `archived`, `deletedAt` persistidos.
+
+Funcionalidades que parecen existir pero son solo UI/mock:
+- Ninguna pantalla Tasks es puramente mock, pero `TaskDetailScreen` no aparece conectada.
+
+Problemas o limitaciones:
+- No se observa flujo real de edición de tarea.
+- `RepeatType` se persiste pero no tiene comportamiento funcional visible.
+- `Category` existe como entidad pero no se observa feature operativa.
+- `archived` existe en datos pero no se observa flujo funcional.
+
+### FEATURE: Notes
+
+Estado:
+PARCIAL
+
+Domain:
+- Entidad:
+	`Note` implementada con `id`, `title`, `content`, `createdAt`, `updatedAt`, `isPinned`, `archived`, `deletedAt`.
+- Enums:
+	No aplica.
+- Validaciones:
+	Repository valida título y contenido no vacíos.
+
+Data:
+- Repository:
+	`NoteRepositoryImpl` implementado.
+- Datasource:
+	`NoteDataSource` abstracto y `SQLiteNoteDataSource` concreto implementados.
+- SQLite:
+	Sí, real.
+- Migraciones:
+	Sí, hasta versión 2.
+- Soft delete:
+	Sí.
+- Índices:
+	Sí, índice parcial sobre `updated_at` con `deleted_at IS NULL`.
+
+State management:
+- Controller:
+	`NoteController` implementado.
+- Providers:
+	`noteDataSourceProvider`, `noteRepositoryProvider`, `noteControllerProvider`, `noteSearchQueryProvider`, `notesProvider`.
+
+UI:
+- Screens:
+	`notes_screen.dart`, `create_note_screen.dart`.
+- Widgets:
+	`note_item.dart`.
+- Navegación:
+	La tab Notes sí está conectada en AppShell. `CreateNoteScreen` se abre desde Home y Notes.
+- Estados loading:
+	Sí.
+- Estados empty:
+	Sí.
+- Estados error:
+	Sí.
+
+Tests:
+- Unit:
+	Sí.
+- Integration:
+	Sí, SQLite datasource.
+- Widget:
+	Sí.
+- Benchmark:
+	Sí.
+
+Funcionalidades realmente operativas:
+- Crear nota.
+- Listar notas.
+- Soft delete.
+- Búsqueda por título y contenido.
+- Persistencia SQLite.
+- UUID normalization.
+- `updatedAt`, `archived`, `deletedAt` persistidos.
+
+Funcionalidades que parecen existir pero son solo UI/mock:
+- Sección “Pinned notes” en UI usa datos reales, pero no se observa flujo para pin/unpin desde la interfaz.
+- `CreateNoteScreen` soporta edición en código, pero no se observa navegación conectada a ese modo desde la lista.
+
+Problemas o limitaciones:
+- No hay flujo visible de pin/unpin.
+- No hay flujo visible de edición desde la lista.
+- `archived` existe a nivel datos, sin feature visible.
+
+### FEATURE: Home
+
+Estado:
+PARCIAL
+
+Domain:
+- Entidad:
+	No tiene capa domain propia.
+- Enums:
+	No aplica.
+- Validaciones:
+	No aplica.
+
+Data:
+- Repository:
+	No propio.
+- Datasource:
+	No propio.
+- SQLite:
+	No directo.
+- Migraciones:
+	No aplica.
+- Soft delete:
+	No aplica.
+- Índices:
+	No aplica.
+
+State management:
+- Controller:
+	No propio.
+- Providers:
+	Consume `tasksProvider` y `notesProvider`.
+
+UI:
+- Screens:
+	`home_screen.dart`.
+- Widgets:
+	Widgets privados dentro del screen.
+- Navegación:
+	Tab Home conectada en AppShell.
+- Estados loading:
+	No explícitos; usa `maybeWhen` con fallback vacío.
+- Estados empty:
+	Sí, actividad reciente vacía.
+- Estados error:
+	No explícitos.
+
+Tests:
+- Unit:
+	No.
+- Integration:
+	No.
+- Widget:
+	No.
+- Benchmark:
+	No.
+
+Funcionalidades realmente operativas:
+- Mostrar resúmenes reales de Tasks y Notes.
+- Acciones rápidas para crear task y note.
+
+Funcionalidades que parecen existir pero son solo UI/mock:
+- Los textos descriptivos y parte del discurso visual son hardcoded.
+
+Problemas o limitaciones:
+- No maneja loading/error propios.
+- No tiene capa funcional propia; depende por completo de Tasks y Notes.
+
+### FEATURE: Insights
+
+Estado:
+PARCIAL
+
+Domain:
+- Entidad:
+	No tiene.
+- Enums:
+	No aplica.
+- Validaciones:
+	No aplica.
+
+Data:
+- Repository:
+	No tiene.
+- Datasource:
+	No tiene.
+- SQLite:
+	No directo.
+- Migraciones:
+	No aplica.
+- Soft delete:
+	No aplica.
+- Índices:
+	No aplica.
+
+State management:
+- Controller:
+	No propio.
+- Providers:
+	Consume `tasksProvider` y `notesProvider`.
+
+UI:
+- Screens:
+	`insights_screen.dart`.
+- Widgets:
+	Widgets privados dentro del screen.
+- Navegación:
+	Tab conectada en AppShell.
+- Estados loading:
+	No explícitos.
+- Estados empty:
+	Sí, fallback visual cuando no hay datos.
+- Estados error:
+	No explícitos.
+
+Tests:
+- Unit:
+	No.
+- Integration:
+	No.
+- Widget:
+	No.
+- Benchmark:
+	No.
+
+Funcionalidades realmente operativas:
+- Muestra métricas calculadas a partir de Tasks y Notes reales.
+- Score, completion rate, weekly counts y streaks se calculan en tiempo real.
+
+Funcionalidades que parecen existir pero son solo UI/mock:
+- CTA “Generate first insights” es placeholder deshabilitado.
+- El layout de tarjetas y parte del copy son visuales, no respaldados por un dominio propio de insights.
+
+Problemas o limitaciones:
+- No hay persistencia histórica ni analytics propios.
+- No hay tests específicos.
+
+### FEATURE: Settings
+
+Estado:
+PLACEHOLDER
+
+Domain:
+- Entidad:
+	`UserSettings` existe.
+- Enums:
+	No aplica.
+- Validaciones:
+	No se observan.
+
+Data:
+- Repository:
+	Archivo existe, vacío.
+- Datasource:
+	Archivo existe, vacío.
+- SQLite:
+	No.
+- Migraciones:
+	No.
+- Soft delete:
+	No aplica.
+- Índices:
+	No aplica.
+
+State management:
+- Controller:
+	`SettingsController` existe pero lanza `UnimplementedError`.
+- Providers:
+	Existen, pero dependen de un controller no funcional.
+
+UI:
+- Screens:
+	`settings_screen.dart` implementada; `statistics_screen.dart` vacío.
+- Widgets:
+	`settings_item.dart` vacío.
+- Navegación:
+	Tab conectada en AppShell.
+- Estados loading:
+	No.
+- Estados empty:
+	No.
+- Estados error:
+	No.
+
+Tests:
+- Unit:
+	No.
+- Integration:
+	No.
+- Widget:
+	No.
+- Benchmark:
+	No.
+
+Funcionalidades realmente operativas:
+- Muestra estadísticas derivadas de Tasks y Notes en la propia screen.
+
+Funcionalidades que parecen existir pero son solo UI/mock:
+- Theme.
+- Accent color.
+- Type size.
+- Notifications.
+- Export.
+- Backup.
+- Premium.
+
+Problemas o limitaciones:
+- La feature Settings funcional no está implementada detrás de la UI.
+
+### FEATURE: Reminders
+
+Estado:
+PARCIAL
+
+Domain:
+- Entidad:
+	`Reminder` implementada con `id`, `title`, `description`, `scheduledAt`, `relatedItemId`, `type`, `isActive`, `createdAt`, `updatedAt`, `archived`, `deletedAt`.
+- Enums:
+	`ReminderType` existente y reutilizado.
+- Validaciones:
+	Repository valida título no vacío.
+
+Data:
+- Repository:
+	`ReminderRepositoryImpl` implementado.
+- Datasource:
+	`ReminderDataSource` abstracto y `SQLiteReminderDataSource` concreto implementados.
+- SQLite:
+	Sí, real.
+- Migraciones:
+	Sí, hasta versión 2.
+- Soft delete:
+	Sí.
+- Índices:
+	Sí, por `scheduled_at`, `deleted_at` y `related_item_id`.
+
+State management:
+- Controller:
+	`ReminderController` implementado.
+- Providers:
+	`reminderDataSourceProvider`, `reminderRepositoryProvider`, `reminderControllerProvider`, `remindersProvider`.
+
+UI:
+- Screens:
+	`calendar_screen.dart` vacío.
+- Widgets:
+	`reminder_item.dart` vacío.
+- Navegación:
+	No conectada en AppShell.
+- Estados loading:
+	No visibles en UI porque no hay screen funcional.
+- Estados empty:
+	No visibles en UI.
+- Estados error:
+	No visibles en UI.
+
+Tests:
+- Unit:
+	Sí.
+- Integration:
+	Sí, SQLite datasource con migración.
+- Widget:
+	No.
+- Benchmark:
+	Sí.
+
+Funcionalidades realmente operativas:
+- CRUD local a nivel backend.
+- Soft delete.
+- Activación/desactivación.
+- Query por rango de fechas.
+- UUID normalization.
+- Migración SQLite.
+
+Funcionalidades que parecen existir pero son solo UI/mock:
+- Toda la UI de Reminders/Calendar.
+
+Problemas o limitaciones:
+- Sin UI conectada.
+- Sin scheduling real ni notificaciones del sistema.
+
+### FEATURE: Notifications
+
+Estado:
+PLACEHOLDER
+
+Domain:
+- Entidad:
+	`NotificationData` existe.
+- Enums:
+	No observados.
+- Validaciones:
+	No observadas.
+
+Data:
+- Repository:
+	Archivo existe, vacío.
+- Datasource:
+	Archivo existe, vacío.
+- SQLite:
+	No.
+- Migraciones:
+	No.
+- Soft delete:
+	No aplica.
+- Índices:
+	No aplica.
+
+State management:
+- Controller:
+	Existe, pero lanza `UnimplementedError`.
+- Providers:
+	Existen, no funcionales en runtime real.
+
+UI:
+- Screens:
+	`notifications_screen.dart` vacío.
+- Widgets:
+	`notification_item.dart` vacío.
+- Navegación:
+	No conectada en AppShell.
+- Estados loading:
+	No.
+- Estados empty:
+	No.
+- Estados error:
+	No.
+
+Tests:
+- Unit:
+	No.
+- Integration:
+	No.
+- Widget:
+	No.
+- Benchmark:
+	No.
+
+Funcionalidades realmente operativas:
+- Ninguna observable.
+
+Funcionalidades que parecen existir pero son solo UI/mock:
+- Toda la feature.
+
+Problemas o limitaciones:
+- No hay implementación real.
+
+### FEATURE: Onboarding
+
+Estado:
+PARCIAL
+
+Domain:
+- Entidad:
+	No.
+- Enums:
+	No.
+- Validaciones:
+	No aplica.
+
+Data:
+- Repository:
+	No.
+- Datasource:
+	No.
+- SQLite:
+	No.
+- Migraciones:
+	No.
+- Soft delete:
+	No.
+- Índices:
+	No.
+
+State management:
+- Controller:
+	No.
+- Providers:
+	No.
+
+UI:
+- Screens:
+	`onboarding_screen.dart`.
+- Widgets:
+	Widgets privados dentro del screen.
+- Navegación:
+	Sí, desde `main.dart` antes de AppShell.
+- Estados loading:
+	No.
+- Estados empty:
+	No.
+- Estados error:
+	No.
+
+Tests:
+- Unit:
+	No.
+- Integration:
+	No.
+- Widget:
+	Solo cobertura indirecta desde el smoke test general.
+- Benchmark:
+	No.
+
+Funcionalidades realmente operativas:
+- Navegar páginas.
+- Skip/completar onboarding en sesión actual.
+
+Funcionalidades que parecen existir pero son solo UI/mock:
+- Todo el contenido es hardcoded.
+
+Problemas o limitaciones:
+- El estado de onboarding no se persiste.
+
+## 4. TASKS — AUDITORÍA PROFUNDA
+
+Confirmación de funcionamiento real:
+
+- Crear tarea:
+	Sí. `CreateTaskScreen` crea una `Task`, llama a `TaskController.createTask`, el repository normaliza UUID y el datasource persiste en SQLite.
+- Editar tarea:
+	Parcial a nivel backend, no como feature visible. Existe `updateTask` en controller/repository/datasource, pero no se observa una UI conectada que permita editar título, descripción, prioridad, etc.
+- Eliminar tarea:
+	Sí, desde `TaskListScreen` y `TaskItem`.
+- Soft delete:
+	Sí, real en SQLite mediante `deleted_at`.
+- Completar tarea:
+	Sí.
+- Descompletar tarea:
+	Sí.
+- Prioridad:
+	Sí, la entidad y SQLite la soportan; la UI lista la muestra. La creación actual fija `Priority.medium`.
+- Categoría:
+	Soportada en datos como `categoryId`, pero no se observa feature real de categorías.
+- Fecha límite:
+	Soportada en entidad y UI de visualización; no se observa flujo de creación/edición para asignarla actualmente.
+- Repetición:
+	Soportada en entidad y SQLite como `repeatType`, pero no hay lógica funcional observable.
+- Listado:
+	Sí.
+- Ordenación:
+	Sí, `created_at DESC` en datasource.
+- Persistencia después de reiniciar la aplicación:
+	Sí conceptualmente, porque usa SQLite en base física `nuvora_tasks.db` fuera de tests.
+- Migración SQLite:
+	Sí, versiones 2 y 3.
+- UUID:
+	Sí, normalización en repository.
+- updatedAt:
+	Sí.
+- archived:
+	Persistido, no expuesto funcionalmente.
+- deletedAt:
+	Sí.
+- manejo de errores:
+	Sí, con excepciones de dominio y UI de snackbar/error state.
+- loading states:
+	Sí.
+- empty states:
+	Sí.
+
+Cosas todavía no implementadas aunque existan visual o estructuralmente:
+- Edición de tareas como flujo conectado.
+- Gestión real de categorías.
+- Asignación de due date desde UI.
+- Recurring tasks real.
+- Archive real.
+- Uso conectado de `TaskDetailScreen`.
+
+## 5. NOTES — AUDITORÍA PROFUNDA
+
+Confirmación de funcionamiento real:
+
+- Crear nota:
+	Sí.
+- Editar nota:
+	Parcial. La infraestructura existe en `CreateNoteScreen(initialNote)` y `NoteController.updateNote`, pero no se observa navegación conectada desde la lista para entrar en modo edición.
+- Eliminar nota:
+	Sí.
+- Soft delete:
+	Sí.
+- Buscar:
+	Sí.
+- Búsqueda por título:
+	Sí.
+- Búsqueda por contenido:
+	Sí.
+- Pinned:
+	Parcial. `isPinned` existe en entidad, SQLite y UI de agrupación, pero no se observa una interacción para pin/unpin.
+- Persistencia:
+	Sí, vía `nuvora_notes.db`.
+- UUID:
+	Sí.
+- updatedAt:
+	Sí.
+- archived:
+	Persistido, sin feature visible.
+- deletedAt:
+	Sí.
+- errores:
+	Sí, controller/repository/datasource y estados/snackbar en UI.
+- loading:
+	Sí.
+- empty states:
+	Sí.
+
+Funcionalidades reales vs visuales:
+- Real:
+	crear, listar, borrar, buscar, persistir, renderizar secciones pinned/recent cuando los datos ya existen.
+- Parcial/visual:
+	edición conectada y pin/unpin desde UI no se observan operativos.
+
+## 6. UI / UX ACTUAL
+
+REAL, conectada a datos reales:
+- AppShell / navegación principal.
+- Home con métricas y listados derivados de Tasks y Notes.
+- Tasks.
+- Notes.
+- Insights usa datos reales de Tasks y Notes.
+- Parte estadística de Settings usa datos reales de Tasks y Notes.
+
+MOCK:
+- Onboarding completo.
+- Gran parte del copy de Home, Insights y Settings.
+- Tarjeta Nuvora Pro.
+
+PLACEHOLDER:
+- Ajustes de Theme, Accent, Type Size, Export, Backup y notificaciones en Settings.
+- CTA inicial de Insights.
+- Notifications UI.
+- Reminders/Calendar UI.
+
+Evaluación general de UI/UX basada en código actual:
+- consistencia visual:
+	Alta entre Home, Tasks, Notes, Insights y Settings en spacing, radios y estilo de tarjetas.
+- Material 3:
+	Sí a nivel ThemeData y uso de componentes Material; hay customización importante en shell y widgets.
+- responsive design:
+	Sí, con helpers compartidos y adaptación en las pantallas principales inspeccionadas.
+- dark mode:
+	Parcial; ThemeData lo soporta pero la UI no depende consistentemente de ThemeData.
+- accesibilidad:
+	Parcial positiva; hay mejoras claras en navegación inferior y acciones críticas, pero no existe una auditoría exhaustiva automática visible para toda la app.
+- animaciones:
+	Sí, existe sistema compartido con reduced motion parcial.
+- estados vacíos:
+	Bien cubiertos en Tasks y Notes.
+- estados de error:
+	Cubiertos en Tasks y Notes, menos explícitos en Home/Insights/Settings.
+- feedback al usuario:
+	Snackbars, loading states y algunas microinteracciones sí existen.
+- navegación:
+	Clara y funcional para las tabs principales.
+- jerarquía visual:
+	Fuerte en las pantallas principales.
+
+## 7. INSIGHTS
+
+Insights utiliza datos reales de Tasks/Notes, pero sigue siendo una feature parcial, muy visual y sin backend propio.
+
+Qué métricas son reales:
+- Completion rate.
+- Completed count.
+- Pending count.
+- Notes count.
+- Completed this week.
+- Notes created this week.
+- Streak actual basada en tareas completadas hoy.
+
+Qué métricas son calculadas:
+- Productivity score.
+- Consistency level.
+- Weekly productivity.
+- Focus label mostrado en Productivity Cards.
+
+Qué gráficos son reales:
+- El gráfico weekly bars se genera a partir de valores calculados reales de Tasks y Notes.
+- Score ring usa score calculado real.
+
+Qué gráficos son mock:
+- No son mock puros, pero son visualizaciones derivadas sin una capa analítica propia ni histórico persistido.
+
+Qué datos están hardcodeados:
+- Textos de recomendaciones.
+- Estructura visual de placeholders.
+- CTA “Generate first insights”.
+
+Qué habría que implementar para convertir Insights en una feature real:
+- Persistencia histórica de métricas.
+- Modelo/dominio propio de insights.
+- Filtros temporales reales.
+- Possibly snapshots diarios/semanales.
+- Cobertura de tests propia.
+
+## 8. SETTINGS
+
+Comprobación de configuraciones:
+
+- Theme:
+	MOCK / PLACEHOLDER. Se muestra “System”, pero no hay wiring funcional de Settings detrás.
+- Dark/light/system:
+	REAL a nivel global de MaterialApp, pero NO como ajuste controlado desde la feature Settings.
+- notificaciones:
+	PLACEHOLDER.
+- preferencias:
+	PLACEHOLDER.
+- datos:
+	PLACEHOLDER.
+- cuenta:
+	PLACEHOLDER.
+- premium:
+	PLACEHOLDER.
+- cualquier otra configuración:
+	PLACEHOLDER.
+
+Lo único realmente funcional dentro de Settings screen es la lectura de estadísticas derivadas de Tasks y Notes para pintar algunos ítems informativos.
+
+## 9. REMINDERS Y NOTIFICATIONS
+
+Reminders:
+- Entidades:
+	Sí.
+- Repositories:
+	Sí.
+- Datasources:
+	Sí.
+- SQLite:
+	Sí.
+- Controllers:
+	Sí.
+- Providers:
+	Sí.
+- UI:
+	No funcional, archivos vacíos.
+- Servicios:
+	No conectados.
+- Integración con notificaciones del sistema:
+	No.
+- Permisos:
+	No.
+- Scheduling:
+	No real, solo persistencia de `scheduledAt`.
+- Tests:
+	Sí.
+
+Clasificación:
+- Implementadas pero no conectadas en UI/OS.
+
+Notifications:
+- Entidades:
+	Sí, mínima.
+- Repositories:
+	Archivos vacíos.
+- Datasources:
+	Archivos vacíos.
+- SQLite:
+	No.
+- Controllers:
+	Existen, no funcionales.
+- Providers:
+	Existen, no funcionales.
+- UI:
+	Vacía.
+- Servicios:
+	Hay archivos de services vacíos.
+- Integración con notificaciones del sistema:
+	No.
+- Permisos:
+	No.
+- Scheduling:
+	No.
+- Tests:
+	No.
+
+Clasificación:
+- Solo modeladas / skeleton parcial.
+
+## 10. ARQUITECTURA
+
+Patrón objetivo observado en features reales:
+
+UI
+ ↓
+Controller / State
+ ↓
+Repository
+ ↓
+Datasource
+ ↓
+SQLite
+
+Respeto actual del patrón:
+- Tasks:
+	Sí.
+- Notes:
+	Sí.
+- Reminders:
+	Sí.
+- Settings:
+	No funcional de extremo a extremo.
+- Notifications:
+	No funcional de extremo a extremo.
+- Home / Insights:
+	Son pantallas consumidoras de providers ajenos, no features completas con ese pipeline.
+
+Evaluación arquitectónica:
+- separación de responsabilidades:
+	Buena en Tasks/Notes/Reminders.
+- dependencias entre capas:
+	Correctas en las features funcionales.
+- inversión de dependencias:
+	Parcial; se usan contratos de datasource y repository, pero no hay abstracción de use cases.
+- reutilización de infraestructura SQLite:
+	Sí, mediante `SqliteDatasourceBase` y `DatabaseFactoryResolver`.
+- duplicación:
+	Hay repetición moderada entre datasources y repositories de features, aunque sigue un patrón consistente.
+- acoplamiento:
+	Core no es totalmente independiente por `ProductivityAnalyzer` importando entidades de features.
+- posibles problemas futuros:
+	doble sistema de theme/tokens, features placeholder con providers no funcionales, bases por feature separadas dificultando operaciones transversales futuras.
+
+## 11. TESTS
+
+Resultado actual:
+- flutter analyze:
+	No issues found.
+- flutter test:
+	196 tests pasando.
+
+Número total de tests:
+- 196
+
+Tests pasando:
+- 196
+
+Tests fallando:
+- 0
+
+Warnings:
+- No se reportaron warnings en `flutter analyze`.
+
+Errores:
+- No se reportaron errores en `flutter analyze` ni en `flutter test`.
+
+Cobertura existente por feature:
+
+Tasks:
+- unit:
+	Sí. entity, controller, repository.
+- integration:
+	Sí. SQLite datasource.
+- widget:
+	Sí. task item, task list, create task screen.
+- benchmark:
+	Sí.
+
+Notes:
+- unit:
+	Sí. entity, controller, repository.
+- integration:
+	Sí. SQLite datasource.
+- widget:
+	Sí. note item, notes screen, create note screen.
+- benchmark:
+	Sí.
+
+Reminders:
+- unit:
+	Sí. entity, controller, repository.
+- integration:
+	Sí. SQLite datasource + migration.
+- widget:
+	No.
+- benchmark:
+	Sí.
+
+Otras features:
+- Home:
+	No.
+- Insights:
+	No.
+- Settings:
+	No.
+- Notifications:
+	No.
+- Onboarding:
+	No tests propios; solo un smoke global del flujo principal.
+
+## 12. DEPENDENCIAS
+
+Producción:
+- flutter
+- flutter_riverpod
+- path
+- sqflite
+- sqflite_common_ffi
+- uuid
+- cupertino_icons
+
+UI:
+- flutter
+- cupertino_icons
+
+State management:
+- flutter_riverpod
+
+Database:
+- sqflite
+- sqflite_common_ffi
+- path
+
+Testing:
+- flutter_test
+- flutter_lints
+
+Utilities:
+- uuid
+
+Dependencias aparentemente innecesarias o poco usadas:
+- `cupertino_icons`: no se observó uso directo en el código inspeccionado.
+- `sqflite`: no se observó import directo en lib/test inspeccionados; la resolución visible usa `sqflite_common_ffi` y `databaseFactory` expuesto por ese paquete en la infraestructura actual.
+
+## 13. ROADMAP REAL
+
+| Área | Estado | % estimado | Próximo trabajo |
+|------|--------|------------|-----------------|
+| Architecture | PARCIAL | 70% | Cerrar inconsistencias entre core/theme y features placeholder no funcionales |
+| Tasks | PARCIAL | 80% | Editar tarea, due date, categorías y recurrencia real |
+| Notes | PARCIAL | 78% | Conectar edición y pin/unpin reales |
+| Reminders | PARCIAL | 65% | Construir UI y conectar scheduling/notificaciones |
+| Notifications | PLACEHOLDER | 10% | Implementar servicios, permisos, scheduling y UI |
+| Home | PARCIAL | 72% | Mejorar cobertura y estados derivados más robustos |
+| Insights | PARCIAL | 55% | Persistencia/histórico y dominio propio |
+| Settings | PLACEHOLDER | 25% | Implementar controller/repository/datasource reales |
+| UI/UX | PARCIAL | 75% | Consolidar dark mode real y cerrar placeholders visibles |
+| Database | PARCIAL | 78% | Estrategia transversal futura y cierre de features faltantes |
+| Testing | PARCIAL | 78% | Cubrir Home, Insights, Settings, Notifications y onboarding |
+| Monetization | NO IMPLEMENTADA | 5% | Definir dominio y flujo funcional |
+
+## 14. BLOQUEADORES
+
+🔴 CRÍTICO
+- No se detectó un bloqueador crítico que rompa el estado actual verificado de Tasks, Notes y Reminders backend.
+
+🟠 IMPORTANTE
+- Notifications no tiene implementación funcional real.
+- Settings funcional no existe detrás de la UI.
+- Reminders no tiene UI ni integración con notificaciones del sistema.
+- Dark mode no está aplicado de forma consistente en la UI real.
+
+🟡 MEJORA
+- Onboarding no se persiste.
+- Doble sistema de theme/tokens.
+- `ProductivityAnalyzer` acoplado a entidades de features desde core.
+- `archived` presente en varias entidades sin feature visible.
+- `TaskDetailScreen` y modo edición de notas existen en código pero no en flujos visibles conectados.
+
+🟢 OPCIONAL
+- Limpiar esqueletos vacíos cuando toque su fase.
+- Revisar dependencia `cupertino_icons` y uso real de `sqflite` cuando se haga housekeeping técnico.
+
+## 15. RECOMENDACIÓN FINAL
+
+A. Estado real actual de Nuvora.
+- Nuvora tiene tres features de datos reales bien encaminadas: Tasks, Notes y Reminders backend. La navegación principal y la UI base están trabajadas. Persistencia local y tests son uno de los puntos más sólidos del proyecto.
+
+B. Qué está completamente terminado.
+- Ninguna feature de producto completa al 100% de extremo a extremo incluyendo UX final, persistencia, tests y capacidades avanzadas.
+- Lo más cercano a terminado hoy es el backend local de Tasks, Notes y Reminders.
+
+C. Qué está parcialmente terminado.
+- Tasks.
+- Notes.
+- Reminders.
+- Home.
+- Insights.
+- Onboarding.
+- Arquitectura general.
+- Testing.
+
+D. Qué es solamente mock/UI.
+- Gran parte de Settings.
+- Notifications.
+- UI de Reminders/Calendar.
+- CTA inicial de Insights.
+- Contenido de Onboarding.
+- Tarjeta premium y superficies de backup/export/theme settings.
+
+E. Qué falta para tener una versión MVP publicable.
+- Cerrar Reminders como feature visible.
+- Implementar Notifications reales si son parte del MVP.
+- Decidir si Settings será real o reducirla a información estática controlada.
+- Consolidar dark mode real.
+- Conectar edición de Notes y definir edición de Tasks.
+- Asegurar persistencia de onboarding o eliminarlo del flujo final.
+- Ampliar tests sobre Home/Insights/Settings.
+
+F. Qué debería hacerse a continuación.
+- Prioridad inmediata: Reminders UI + integración real con notificaciones, o bien cerrar primero Notifications si Reminders depende de ello para ser útil en MVP.
+
+G. Orden recomendado de las próximas 5-10 fases.
+1. Reminders UI real y conexión con el backend ya implementado.
+2. Notifications / scheduling / permisos.
+3. Recurring Tasks real sobre la base de `RepeatType` existente.
+4. Calendar / Planning conectado a Tasks y Reminders.
+5. Settings funcional mínima para preferencias reales del MVP.
+6. Insights reales con persistencia histórica.
+7. Global Search & Filters.
+8. Dark mode real y consolidación del sistema de tema.
+9. Full QA adicional sobre features sin tests específicos.
+10. Preparación de release Android/iOS.

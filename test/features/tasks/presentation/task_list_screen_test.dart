@@ -10,6 +10,7 @@ import 'package:nuvora/features/tasks/application/controllers/task_controller.da
 import 'package:nuvora/features/tasks/application/controllers/task_provider.dart';
 import 'package:nuvora/features/tasks/domain/entities/task.dart';
 import 'package:nuvora/features/tasks/domain/repositories/task_repository.dart';
+import 'package:nuvora/features/tasks/presentation/screens/task_detail_screen.dart';
 import 'package:nuvora/features/tasks/presentation/screens/task_list_screen.dart';
 import 'package:nuvora/features/tasks/presentation/widgets/task_item.dart';
 
@@ -219,6 +220,22 @@ void main() {
 
       expect(
           find.text('Could not update task'), findsOneWidget);
+    });
+
+    testWidgets('opens TaskDetailScreen when tapping a task item',
+        (tester) async {
+      final task = _makeTask(id: 'open-detail', title: 'Open detail task');
+      final repo = _FakeRepo(tasks: [task]);
+      final controller = TaskController(repository: repo);
+      await tester.pumpWidget(_buildSubject(tasks: [task], controller: controller));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Open detail task'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TaskDetailScreen), findsOneWidget);
+      expect(find.text('Task Detail'), findsOneWidget);
+      expect(find.text('Open detail task'), findsOneWidget);
     });
   });
 }
