@@ -40,6 +40,8 @@ Task _makeTask({
   String title = 'Task title',
   String? description = 'Task description',
   Priority priority = Priority.medium,
+  DateTime? dueDate,
+  bool isCompleted = false,
 }) =>
     Task(
       id: id,
@@ -47,10 +49,13 @@ Task _makeTask({
       description: description,
       createdAt: DateTime(2026, 7, 1, 10, 0),
       updatedAt: DateTime(2026, 7, 1, 10, 0),
-      isCompleted: false,
+      dueDate: dueDate,
+      isCompleted: isCompleted,
       priority: priority,
       repeatType: RepeatType.none,
     );
+
+DateTime _dateOnly(DateTime value) => DateTime(value.year, value.month, value.day);
 
 Widget _buildSubject({required Task task, required TaskController controller}) =>
     ProviderScope(
@@ -158,6 +163,95 @@ void main() {
       expect(find.text('Title is required'), findsOneWidget);
       expect(repo.updateCalls, 0);
       expect(repo.lastUpdated, isNull);
+    });
+
+    testWidgets('shows no due date when task has no due date', (tester) async {
+      final repo = _FakeRepo();
+      final task = _makeTask(dueDate: null);
+      final controller = TaskController(repository: repo);
+
+      await tester.pumpWidget(_buildSubject(task: task, controller: controller));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Due date'), findsOneWidget);
+      expect(find.text('No due date'), findsOneWidget);
+      expect(find.text('Overdue'), findsNothing);
+    });
+
+    testWidgets('shows formatted future due date', (tester) async {
+      final repo = _FakeRepo();
+      final future = DateTime.now().add(const Duration(days: 3));
+      final task = _makeTask(dueDate: DateTime(future.year, future.month, future.day));
+      final controller = TaskController(repository: repo);
+
+      await tester.pumpWidget(_buildSubject(task: task, controller: controller));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('task-detail-due-date-label')), findsOneWidget);
+      expect(find.text('Overdue'), findsNothing);
+    });
+
+    testWidgets('shows overdue indicator for past due date', (tester) async {
+      final repo = _FakeRepo();
+      final past = DateTime.now().subtract(const Duration(days: 2));
+      final task = _makeTask(dueDate: DateTime(past.year, past.month, past.day));
+      final controller = TaskController(repository: repo);
+
+      await tester.pumpWidget(_buildSubject(task: task, controller: controller));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Overdue'), findsOneWidget);
+    });
+
+    testWidgets('edit mode shows existing due date and can change it',
+        (tester) async {
+      final repo = _FakeRepo();
+      final initialDueDate = DateTime(2026, 1, 1);
+      final task = _makeTask(dueDate: initialDueDate);
+      final controller = TaskController(repository: repo);
+
+      await tester.pumpWidget(_buildSubject(task: task, controller: controller));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Edit'));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('task-edit-due-date-label')), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('task-edit-select-date-button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('15').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Save changes'));
+      await tester.pumpAndSettle();
+
+      expect(repo.lastUpdated, isNotNull);
+      expect(repo.lastUpdated!.dueDate, isNotNull);
+      expect(_dateOnly(repo.lastUpdated!.dueDate!), isNot(_dateOnly(initialDueDate)));
+    });
+
+    testWidgets('edit mode can clear due date and save null', (tester) async {
+      final repo = _FakeRepo();
+      final task = _makeTask(dueDate: DateTime(2026, 1, 1));
+      final controller = TaskController(repository: repo);
+
+      await tester.pumpWidget(_buildSubject(task: task, controller: controller));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Edit'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('task-edit-clear-date-button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save changes'));
+      await tester.pumpAndSettle();
+
+      expect(repo.lastUpdated, isNotNull);
+      expect(repo.lastUpdated!.dueDate, isNull);
+      expect(find.text('No due date'), findsOneWidget);
     });
   });
 }

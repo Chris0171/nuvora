@@ -24,6 +24,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 	late final TextEditingController _descriptionController;
 	late Task _task;
 	late Priority _selectedPriority;
+	DateTime? _selectedDueDate;
 	bool _isEditing = false;
 	bool _isSaving = false;
 
@@ -34,6 +35,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 		_titleController = TextEditingController(text: _task.title);
 		_descriptionController = TextEditingController(text: _task.description ?? '');
 		_selectedPriority = _task.priority;
+		_selectedDueDate = _task.dueDate;
 	}
 
 	@override
@@ -48,6 +50,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 			_titleController.text = _task.title;
 			_descriptionController.text = _task.description ?? '';
 			_selectedPriority = _normalizeEditablePriority(_task.priority);
+			_selectedDueDate = _task.dueDate;
 			_isEditing = true;
 		});
 	}
@@ -90,6 +93,77 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 		return '${value.year}-$month-$day $hour:$minute';
 	}
 
+	String _formatDueDate(DateTime value) {
+		const months = <String>[
+			'Jan',
+			'Feb',
+			'Mar',
+			'Apr',
+			'May',
+			'Jun',
+			'Jul',
+			'Aug',
+			'Sep',
+			'Oct',
+			'Nov',
+			'Dec',
+		];
+		return '${value.day.toString().padLeft(2, '0')} ${months[value.month - 1]} ${value.year}';
+	}
+
+	Future<void> _pickDueDate() async {
+		final now = DateTime.now();
+		final initialDate = _selectedDueDate ?? DateTime(now.year, now.month, now.day);
+		final selected = await showDatePicker(
+			context: context,
+			initialDate: initialDate,
+			firstDate: DateTime(now.year - 10),
+			lastDate: DateTime(now.year + 20),
+			helpText: 'Select due date',
+		);
+
+		if (selected == null || !mounted) {
+			return;
+		}
+
+		setState(() {
+			_selectedDueDate = DateTime(selected.year, selected.month, selected.day);
+		});
+	}
+
+	void _clearDueDate() {
+		setState(() {
+			_selectedDueDate = null;
+		});
+	}
+
+	String _dueDateLabel(DateTime? dueDate) {
+		if (dueDate == null) {
+			return 'No due date';
+		}
+
+		final now = DateTime.now();
+		final today = DateTime(now.year, now.month, now.day);
+		final due = DateTime(dueDate.year, dueDate.month, dueDate.day);
+
+		if (due == today) {
+			return 'Today';
+		}
+
+		return _formatDueDate(dueDate);
+	}
+
+	bool _isOverdue(DateTime? dueDate) {
+		if (dueDate == null || _task.isCompleted) {
+			return false;
+		}
+
+		final now = DateTime.now();
+		final today = DateTime(now.year, now.month, now.day);
+		final due = DateTime(dueDate.year, dueDate.month, dueDate.day);
+		return due.isBefore(today);
+	}
+
 	Future<void> _toggleCompleted(bool value) async {
 		try {
 			await ref.read(taskControllerProvider).markTaskAsCompleted(
@@ -118,12 +192,21 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 
 		setState(() => _isSaving = true);
 
-		final Task updatedTask = _task.copyWith(
+		final Task updatedTask = Task(
+			id: _task.id,
 			title: _titleController.text.trim(),
 			description: _descriptionController.text.trim().isEmpty
 				? null
 				: _descriptionController.text.trim(),
+			createdAt: _task.createdAt,
+			updatedAt: _task.updatedAt,
+			dueDate: _selectedDueDate,
+			isCompleted: _task.isCompleted,
 			priority: _selectedPriority,
+			categoryId: _task.categoryId,
+			repeatType: _task.repeatType,
+			archived: _task.archived,
+			deletedAt: _task.deletedAt,
 		);
 
 		try {
@@ -148,6 +231,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 
 	@override
 	Widget build(BuildContext context) {
+		final overdue = _isOverdue(_task.dueDate);
 		final Widget bodyContent = _isEditing
 			? Form(
 				key: _formKey,
@@ -202,6 +286,45 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 								setState(() => _selectedPriority = priority);
 							},
 						),
+						const SizedBox(height: AppSpacing.lg),
+						Text('Due date', style: AppTypography.labelLarge),
+						const SizedBox(height: AppSpacing.sm),
+						Container(
+							padding: const EdgeInsets.all(AppSpacing.md),
+							decoration: BoxDecoration(
+								color: AppColors.surface,
+								border: Border.all(color: AppColors.border),
+								borderRadius: BorderRadius.circular(AppRadius.lg),
+							),
+							child: Row(
+								children: [
+									Expanded(
+										child: Text(
+											_dueDateLabel(_selectedDueDate),
+											key: const ValueKey('task-edit-due-date-label'),
+											style: AppTypography.bodyMedium.copyWith(
+												color: _selectedDueDate == null
+													? AppColors.textSecondary
+													: AppColors.textPrimary,
+											),
+										),
+									),
+									TextButton.icon(
+										key: const ValueKey('task-edit-select-date-button'),
+										onPressed: _pickDueDate,
+										icon: const Icon(Icons.calendar_today_outlined),
+										label: Text(_selectedDueDate == null ? 'Select date' : 'Change'),
+									),
+									if (_selectedDueDate != null)
+										IconButton(
+											key: const ValueKey('task-edit-clear-date-button'),
+											onPressed: _clearDueDate,
+											icon: const Icon(Icons.close),
+											tooltip: 'Remove due date',
+										),
+								],
+							),
+						),
 						const SizedBox(height: AppSpacing.xl),
 						Row(
 							children: [
@@ -254,6 +377,37 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 								Text(
 									'Priority: ${_priorityLabel(_task.priority)}',
 									style: AppTypography.bodyMedium,
+								),
+								const SizedBox(height: AppSpacing.sm),
+								Text('Due date', style: AppTypography.labelMedium),
+								const SizedBox(height: AppSpacing.xs),
+								Row(
+									children: [
+										Text(
+											_dueDateLabel(_task.dueDate),
+											key: const ValueKey('task-detail-due-date-label'),
+											style: AppTypography.bodyMedium.copyWith(
+												color: overdue ? AppColors.danger : AppColors.textPrimary,
+											),
+										),
+										if (overdue) ...[
+											const SizedBox(width: AppSpacing.sm),
+											Container(
+												padding: const EdgeInsets.symmetric(
+													horizontal: AppSpacing.sm,
+													vertical: AppSpacing.xs,
+												),
+												decoration: BoxDecoration(
+													color: AppColors.danger.withValues(alpha: 0.12),
+													borderRadius: BorderRadius.circular(AppRadius.full),
+												),
+												child: Text(
+													'Overdue',
+													style: AppTypography.labelSmall.copyWith(color: AppColors.danger),
+												),
+											),
+										],
+									],
 								),
 								const SizedBox(height: AppSpacing.sm),
 								Text(

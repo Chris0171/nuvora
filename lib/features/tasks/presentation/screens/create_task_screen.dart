@@ -20,7 +20,52 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 	final _formKey = GlobalKey<FormState>();
 	final _titleController = TextEditingController();
 	final _descriptionController = TextEditingController();
+	DateTime? _selectedDueDate;
 	bool _isSaving = false;
+
+	Future<void> _pickDueDate() async {
+		final now = DateTime.now();
+		final initialDate = _selectedDueDate ?? DateTime(now.year, now.month, now.day);
+		final selected = await showDatePicker(
+			context: context,
+			initialDate: initialDate,
+			firstDate: DateTime(now.year - 10),
+			lastDate: DateTime(now.year + 20),
+			helpText: 'Select due date',
+		);
+
+		if (selected == null || !mounted) {
+			return;
+		}
+
+		setState(() {
+			_selectedDueDate = DateTime(selected.year, selected.month, selected.day);
+		});
+	}
+
+	void _clearDueDate() {
+		setState(() {
+			_selectedDueDate = null;
+		});
+	}
+
+	String _formatDueDate(DateTime date) {
+		const months = <String>[
+			'Jan',
+			'Feb',
+			'Mar',
+			'Apr',
+			'May',
+			'Jun',
+			'Jul',
+			'Aug',
+			'Sep',
+			'Oct',
+			'Nov',
+			'Dec',
+		];
+		return '${date.day.toString().padLeft(2, '0')} ${months[date.month - 1]} ${date.year}';
+	}
 
 	@override
 	void dispose() {
@@ -44,7 +89,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 					? null
 					: _descriptionController.text.trim(),
 			createdAt: DateTime.now(),
-			dueDate: null,
+			dueDate: _selectedDueDate,
 			isCompleted: false,
 			priority: Priority.medium,
 			categoryId: null,
@@ -121,6 +166,52 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 									style: AppTypography.bodyMedium,
 									minLines: 3,
 									maxLines: 5,
+								),
+								const SizedBox(height: AppSpacing.xl),
+								Text(
+									'Due date',
+									style: AppTypography.labelLarge.copyWith(
+										color: AppColors.textPrimary,
+									),
+								),
+								const SizedBox(height: AppSpacing.md),
+								Container(
+									padding: const EdgeInsets.all(AppSpacing.md),
+									decoration: BoxDecoration(
+										color: AppColors.surface,
+										border: Border.all(color: AppColors.border),
+										borderRadius: BorderRadius.circular(AppRadius.lg),
+									),
+									child: Row(
+										children: [
+											Expanded(
+												child: Text(
+													_selectedDueDate == null
+														? 'No due date'
+														: _formatDueDate(_selectedDueDate!),
+													key: const ValueKey('create-task-due-date-label'),
+													style: AppTypography.bodyMedium.copyWith(
+														color: _selectedDueDate == null
+															? AppColors.textSecondary
+															: AppColors.textPrimary,
+													),
+												),
+											),
+											TextButton.icon(
+												key: const ValueKey('create-task-select-date-button'),
+												onPressed: _pickDueDate,
+												icon: const Icon(Icons.calendar_today_outlined),
+												label: Text(_selectedDueDate == null ? 'Select date' : 'Change'),
+											),
+											if (_selectedDueDate != null)
+												IconButton(
+													key: const ValueKey('create-task-clear-date-button'),
+													onPressed: _clearDueDate,
+													icon: const Icon(Icons.close),
+													tooltip: 'Remove due date',
+												),
+										],
+									),
 								),
 								const SizedBox(height: AppSpacing.xxl),
 								// Save Button

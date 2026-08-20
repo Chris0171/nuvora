@@ -70,6 +70,8 @@ Future<void> _navigateToCreate(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+DateTime _dateOnly(DateTime value) => DateTime(value.year, value.month, value.day);
+
 // ---------------------------------------------------------------------------
 void main() {
   group('CreateTaskScreen', () {
@@ -173,6 +175,42 @@ void main() {
       final button =
           tester.widget<ElevatedButton>(find.byType(ElevatedButton).last);
       expect(button.onPressed, isNotNull);
+    });
+
+    testWidgets('allows selecting due date and shows it on screen', (tester) async {
+      final controller = TaskController(repository: _FakeRepo());
+      await tester.pumpWidget(_buildSubject(controller));
+      await _navigateToCreate(tester);
+
+      expect(find.text('No due date'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('create-task-select-date-button')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No due date'), findsNothing);
+      expect(find.byKey(const ValueKey('create-task-due-date-label')), findsOneWidget);
+    });
+
+    testWidgets('creates task with selected due date', (tester) async {
+      final repo = _FakeRepo();
+      final controller = TaskController(repository: repo);
+      await tester.pumpWidget(_buildSubject(controller));
+      await _navigateToCreate(tester);
+
+      await tester.enterText(find.byType(TextFormField).first, 'Task with due date');
+      await tester.tap(find.byKey(const ValueKey('create-task-select-date-button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Create Task'));
+      await tester.pumpAndSettle();
+
+      expect(repo.lastCreated, isNotNull);
+      expect(repo.lastCreated!.dueDate, isNotNull);
+      expect(_dateOnly(repo.lastCreated!.dueDate!), _dateOnly(DateTime.now()));
     });
   });
 }

@@ -66,6 +66,17 @@ void main() {
       final task = buildTask();
       expect(task.isCompleted, isFalse);
     });
+
+    test('dueDate is null when not provided', () {
+      final task = buildTask();
+      expect(task.dueDate, isNull);
+    });
+
+    test('dueDate keeps assigned date value', () {
+      final dueDate = DateTime(2026, 8, 25);
+      final task = buildTask(dueDate: dueDate);
+      expect(task.dueDate, dueDate);
+    });
   });
 
   group('Task entity – copyWith', () {

@@ -169,6 +169,56 @@ void main() {
         throwsA(isA<TaskNotFoundException>()),
       );
     });
+
+    test('can assign dueDate when it was null', () async {
+      final task = _makeTask(id: 'due-assign');
+      await ds.createTask(task);
+      final dueDate = DateTime(2026, 8, 25);
+
+      final updated = task.copyWith(dueDate: dueDate);
+      await ds.updateTask(updated);
+
+      final result = (await ds.getTasks()).first;
+      expect(result.dueDate, isNotNull);
+      expect(result.dueDate!.millisecondsSinceEpoch, dueDate.millisecondsSinceEpoch);
+    });
+
+    test('can change dueDate to a different value', () async {
+      final task = _makeTask(id: 'due-change').copyWith(dueDate: DateTime(2026, 8, 25));
+      await ds.createTask(task);
+      final newDueDate = DateTime(2026, 9, 1);
+
+      final updated = task.copyWith(dueDate: newDueDate);
+      await ds.updateTask(updated);
+
+      final result = (await ds.getTasks()).first;
+      expect(result.dueDate, isNotNull);
+      expect(result.dueDate!.millisecondsSinceEpoch, newDueDate.millisecondsSinceEpoch);
+    });
+
+    test('can remove dueDate by setting it to null', () async {
+      final base = _makeTask(id: 'due-remove').copyWith(dueDate: DateTime(2026, 8, 25));
+      await ds.createTask(base);
+      final removed = Task(
+        id: base.id,
+        title: base.title,
+        description: base.description,
+        createdAt: base.createdAt,
+        updatedAt: base.updatedAt,
+        dueDate: null,
+        isCompleted: base.isCompleted,
+        priority: base.priority,
+        categoryId: base.categoryId,
+        repeatType: base.repeatType,
+        archived: base.archived,
+        deletedAt: base.deletedAt,
+      );
+
+      await ds.updateTask(removed);
+
+      final result = (await ds.getTasks()).first;
+      expect(result.dueDate, isNull);
+    });
   });
 
   // -------------------------------------------------------------------------
