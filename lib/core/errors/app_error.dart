@@ -53,3 +53,37 @@ class NoteAlreadyExistsException extends NoteException {
 class NoteValidationException extends NoteException {
   const NoteValidationException(super.message);
 }
+
+/// Base exception for all domain-level reminder errors.
+class ReminderException implements Exception {
+  const ReminderException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => 'ReminderException: $message';
+}
+
+/// Thrown when an operation targets a reminder that does not exist (or is
+/// soft-deleted).
+class ReminderNotFoundException extends ReminderException {
+  const ReminderNotFoundException(String reminderId)
+      : super('Reminder not found: $reminderId');
+}
+
+/// Thrown when trying to create a reminder whose id already exists.
+class ReminderAlreadyExistsException extends ReminderException {
+  const ReminderAlreadyExistsException(String reminderId)
+      : super('Reminder already exists: $reminderId');
+}
+
+/// Thrown when a Reminder violates a domain invariant.
+class ReminderValidationException extends ReminderException {
+  const ReminderValidationException(super.message);
+}
+
+/// Thrown when infrastructure-level reminder failures need translation into
+/// the feature's domain boundary.
+class ReminderStorageException extends ReminderException {
+  const ReminderStorageException(super.message);
+}
