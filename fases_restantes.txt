@@ -2,26 +2,6 @@ ROADMAP MAESTRO DE NUVORA
 🟢 BLOQUE 1 — Núcleo de Tasks
 Fase 4 — Completar Tasks
 
-4A — Task Detail + Edición
-
-Conectar TaskDetailScreen.
-Abrir detalle desde una tarea.
-Editar título.
-Editar descripción.
-Editar prioridad.
-Guardar mediante updateTask.
-Mantener SQLite/repository/controller existentes.
-Tests.
-
-4B — Due Date
-
-Seleccionar fecha límite.
-Mostrarla correctamente.
-Editarla.
-Persistir dueDate.
-Estados sin fecha/con fecha.
-Tests.
-
 4C — Categorías
 
 Definir flujo real de categorías.
