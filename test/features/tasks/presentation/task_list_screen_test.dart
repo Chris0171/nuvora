@@ -6,9 +6,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nuvora/core/constants/priority.dart';
 import 'package:nuvora/core/constants/repeat_type.dart';
 import 'package:nuvora/core/errors/app_error.dart';
+import 'package:nuvora/features/tasks/application/controllers/category_controller.dart';
+import 'package:nuvora/features/tasks/application/controllers/category_provider.dart';
 import 'package:nuvora/features/tasks/application/controllers/task_controller.dart';
 import 'package:nuvora/features/tasks/application/controllers/task_provider.dart';
+import 'package:nuvora/features/tasks/domain/entities/category.dart';
 import 'package:nuvora/features/tasks/domain/entities/task.dart';
+import 'package:nuvora/features/tasks/domain/repositories/category_repository.dart';
 import 'package:nuvora/features/tasks/domain/repositories/task_repository.dart';
 import 'package:nuvora/features/tasks/presentation/screens/task_detail_screen.dart';
 import 'package:nuvora/features/tasks/presentation/screens/task_list_screen.dart';
@@ -55,6 +59,18 @@ class _FakeRepo implements TaskRepository {
   }
 }
 
+class _FakeCategoryRepo implements CategoryRepository {
+  _FakeCategoryRepo({List<Category>? initial}) : categories = initial ?? <Category>[];
+
+  final List<Category> categories;
+
+  @override
+  Future<void> createCategory(Category category) async {}
+
+  @override
+  Future<List<Category>> getCategories() async => List.unmodifiable(categories);
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -70,11 +86,19 @@ Task _makeTask({String id = 'tid-1', String title = 'Task Alpha'}) => Task(
 Widget _buildSubject({
   required List<Task> tasks,
   required TaskController controller,
+  _FakeCategoryRepo? categoryRepo,
 }) =>
     ProviderScope(
       overrides: [
         tasksProvider.overrideWith((_) => Future.value(tasks)),
         taskControllerProvider.overrideWithValue(controller),
+        categoryControllerProvider.overrideWithValue(
+          CategoryController(repository: categoryRepo ?? _FakeCategoryRepo()),
+        ),
+        categoriesProvider.overrideWith(
+          (ref) async =>
+              (categoryRepo ?? _FakeCategoryRepo()).getCategories(),
+        ),
       ],
       child: const MaterialApp(
         home: Scaffold(body: TaskListScreen()),
@@ -87,6 +111,10 @@ Widget _buildError(Object err) => ProviderScope(
         taskControllerProvider.overrideWithValue(
           TaskController(repository: _FakeRepo()),
         ),
+        categoryControllerProvider.overrideWithValue(
+          CategoryController(repository: _FakeCategoryRepo()),
+        ),
+        categoriesProvider.overrideWith((ref) async => const <Category>[]),
       ],
       child: const MaterialApp(
         home: Scaffold(body: TaskListScreen()),
@@ -99,6 +127,10 @@ Widget _buildLoading() => ProviderScope(
         taskControllerProvider.overrideWithValue(
           TaskController(repository: _FakeRepo()),
         ),
+        categoryControllerProvider.overrideWithValue(
+          CategoryController(repository: _FakeCategoryRepo()),
+        ),
+        categoriesProvider.overrideWith((ref) async => const <Category>[]),
       ],
       child: const MaterialApp(
         home: Scaffold(body: TaskListScreen()),
@@ -236,6 +268,27 @@ void main() {
       expect(find.byType(TaskDetailScreen), findsOneWidget);
       expect(find.text('Task Detail'), findsOneWidget);
       expect(find.text('Open detail task'), findsOneWidget);
+    });
+
+    testWidgets('shows category name in TaskItem when category exists',
+        (tester) async {
+      final task = _makeTask(id: 'cat-task', title: 'Categorized task')
+          .copyWith(categoryId: 'work');
+      final repo = _FakeRepo(tasks: [task]);
+      final categoryRepo = _FakeCategoryRepo(
+        initial: const [Category(id: 'work', name: 'Work')],
+      );
+      final controller = TaskController(repository: repo);
+      await tester.pumpWidget(
+        _buildSubject(
+          tasks: [task],
+          controller: controller,
+          categoryRepo: categoryRepo,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Work'), findsOneWidget);
     });
   });
 }

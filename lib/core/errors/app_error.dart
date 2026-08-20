@@ -87,3 +87,24 @@ class ReminderValidationException extends ReminderException {
 class ReminderStorageException extends ReminderException {
   const ReminderStorageException(super.message);
 }
+
+/// Base exception for all domain-level category errors.
+class CategoryException implements Exception {
+  const CategoryException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => 'CategoryException: $message';
+}
+
+/// Thrown when trying to create a category that already exists.
+class CategoryAlreadyExistsException extends CategoryException {
+  const CategoryAlreadyExistsException(String categoryName)
+      : super('Category already exists: $categoryName');
+}
+
+/// Thrown when a Category violates a domain invariant.
+class CategoryValidationException extends CategoryException {
+  const CategoryValidationException(super.message);
+}

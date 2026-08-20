@@ -8,7 +8,9 @@ import 'package:nuvora/core/theme/app_design_system.dart';
 import 'package:nuvora/core/widgets/app_feedback.dart';
 import 'package:nuvora/core/widgets/app_motion.dart';
 import 'package:nuvora/core/widgets/app_responsive.dart';
+import 'package:nuvora/features/tasks/application/controllers/category_provider.dart';
 import 'package:nuvora/features/tasks/application/controllers/task_provider.dart';
+import 'package:nuvora/features/tasks/domain/entities/category.dart';
 import 'package:nuvora/features/tasks/domain/entities/task.dart';
 import 'package:nuvora/features/tasks/presentation/screens/create_task_screen.dart';
 import 'package:nuvora/features/tasks/presentation/screens/task_detail_screen.dart';
@@ -22,6 +24,13 @@ class TaskListScreen extends ConsumerWidget {
 		final horizontalPadding = AppResponsive.pagePadding(context);
 		final motionDuration = AppMotion.resolvedDuration(context, AppMotion.duration);
 		final motionCurve = AppMotion.resolvedCurve(context, AppMotion.curve);
+		final categories = ref.watch(categoriesProvider).maybeWhen(
+			data: (items) => items,
+			orElse: () => const <Category>[],
+		);
+		final Map<String, String> categoryById = <String, String>{
+			for (final category in categories) category.id: category.name,
+		};
 		final tasksAsync = ref.watch(tasksProvider);
 		final stateChild = tasksAsync.when(
 			data: (tasks) {
@@ -125,19 +134,34 @@ class TaskListScreen extends ConsumerWidget {
 							title: 'Must do now',
 							tasks: mustDoNow,
 							emptyText: 'No urgent tasks right now',
-							childBuilder: (task) => _taskTile(context, ref, task),
+							childBuilder: (task) => _taskTile(
+								context,
+								ref,
+								task,
+								categoryById,
+							),
 						),
 						_TaskPrioritySection(
 							title: 'Upcoming',
 							tasks: upcoming,
 							emptyText: 'No upcoming tasks available',
-							childBuilder: (task) => _taskTile(context, ref, task),
+							childBuilder: (task) => _taskTile(
+								context,
+								ref,
+								task,
+								categoryById,
+							),
 						),
 						_TaskPrioritySection(
 							title: 'Completed today',
 							tasks: completedToday,
 							emptyText: 'No completed tasks yet',
-							childBuilder: (task) => _taskTile(context, ref, task),
+							childBuilder: (task) => _taskTile(
+								context,
+								ref,
+								task,
+								categoryById,
+							),
 						),
 						const SizedBox(height: AppSpacing.sm),
 					],
@@ -197,12 +221,20 @@ class TaskListScreen extends ConsumerWidget {
 		);
 	}
 
-	Widget _taskTile(BuildContext context, WidgetRef ref, Task task) {
+	Widget _taskTile(
+		BuildContext context,
+		WidgetRef ref,
+		Task task,
+		Map<String, String> categoryById,
+	) {
 		return Padding(
 			padding: const EdgeInsets.only(bottom: AppSpacing.md),
 			child: TaskItem(
 				key: ValueKey(task.id),
 				task: task,
+				categoryName: task.categoryId == null
+					? null
+					: categoryById[task.categoryId!],
 				onTap: () {
 					Navigator.of(context).push(
 						AppPageRoute<void>(

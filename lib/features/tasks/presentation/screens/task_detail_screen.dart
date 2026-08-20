@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nuvora/core/constants/priority.dart';
 import 'package:nuvora/core/theme/app_design_system.dart';
 import 'package:nuvora/core/widgets/app_feedback.dart';
+import 'package:nuvora/features/tasks/application/controllers/category_provider.dart';
+import 'package:nuvora/features/tasks/domain/entities/category.dart';
 import 'package:nuvora/features/tasks/application/controllers/task_provider.dart';
 import 'package:nuvora/features/tasks/domain/entities/task.dart';
 
@@ -24,6 +26,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 	late final TextEditingController _descriptionController;
 	late Task _task;
 	late Priority _selectedPriority;
+	String? _selectedCategoryId;
 	DateTime? _selectedDueDate;
 	bool _isEditing = false;
 	bool _isSaving = false;
@@ -35,6 +38,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 		_titleController = TextEditingController(text: _task.title);
 		_descriptionController = TextEditingController(text: _task.description ?? '');
 		_selectedPriority = _task.priority;
+		_selectedCategoryId = _task.categoryId;
 		_selectedDueDate = _task.dueDate;
 	}
 
@@ -50,6 +54,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 			_titleController.text = _task.title;
 			_descriptionController.text = _task.description ?? '';
 			_selectedPriority = _normalizeEditablePriority(_task.priority);
+			_selectedCategoryId = _task.categoryId;
 			_selectedDueDate = _task.dueDate;
 			_isEditing = true;
 		});
@@ -137,6 +142,148 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 		});
 	}
 
+	String _categoryLabel(List<Category> categories, String? categoryId) {
+		if (categoryId == null) {
+			return 'No category';
+		}
+
+		for (final category in categories) {
+			if (category.id == categoryId) {
+				return category.name;
+			}
+		}
+
+		return 'No category';
+	}
+
+	Future<Category?> _showCreateCategoryDialog() async {
+		final controller = TextEditingController();
+		String? errorText;
+
+		final Category? result = await showDialog<Category>(
+			context: context,
+			builder: (context) {
+				return StatefulBuilder(
+					builder: (context, setDialogState) {
+						return AlertDialog(
+							title: const Text('Create category'),
+							content: TextField(
+								controller: controller,
+								autofocus: true,
+								decoration: InputDecoration(
+									hintText: 'Category name',
+									errorText: errorText,
+								),
+							),
+							actions: [
+								TextButton(
+									onPressed: () => Navigator.of(context).pop(),
+									child: const Text('Cancel'),
+								),
+								ElevatedButton(
+									onPressed: () {
+										final name = controller.text.trim();
+										if (name.isEmpty) {
+											setDialogState(() {
+												errorText = 'Category name is required';
+											});
+											return;
+										}
+										Navigator.of(context).pop(
+											Category(id: '', name: name),
+										);
+									},
+									child: const Text('Create'),
+								),
+							],
+						);
+					},
+				);
+			},
+		);
+
+		controller.dispose();
+		return result;
+	}
+
+	Future<void> _openCategorySelector() async {
+		final categories = await ref.read(categoriesProvider.future);
+		if (!mounted) return;
+
+		final selectedCategoryId = await showModalBottomSheet<String?>(
+			context: context,
+			showDragHandle: true,
+			builder: (context) {
+				return SafeArea(
+					child: Column(
+						mainAxisSize: MainAxisSize.min,
+						children: [
+							ListTile(
+								title: const Text('No category'),
+								leading: _selectedCategoryId == null
+									? const Icon(Icons.check_circle, color: AppColors.primary)
+									: const Icon(Icons.circle_outlined),
+								onTap: () => Navigator.of(context).pop('__none__'),
+							),
+							...categories.map(
+								(category) => ListTile(
+									title: Text(category.name),
+									leading: _selectedCategoryId == category.id
+										? const Icon(Icons.check_circle, color: AppColors.primary)
+										: const Icon(Icons.circle_outlined),
+									onTap: () => Navigator.of(context).pop(category.id),
+								),
+							),
+							ListTile(
+								leading: const Icon(Icons.add),
+								title: const Text('Create category'),
+								onTap: () => Navigator.of(context).pop('__create__'),
+							),
+						],
+					),
+				);
+			},
+		);
+
+		if (!mounted || selectedCategoryId == null) {
+			return;
+		}
+
+		if (selectedCategoryId == '__none__') {
+			setState(() {
+				_selectedCategoryId = null;
+			});
+			return;
+		}
+
+		if (selectedCategoryId == '__create__') {
+			final newCategory = await _showCreateCategoryDialog();
+			if (newCategory == null) return;
+			try {
+				await ref.read(categoryControllerProvider).createCategory(newCategory);
+				ref.invalidate(categoriesProvider);
+				final refreshed = await ref.read(categoriesProvider.future);
+				if (!mounted) return;
+				final Category created = refreshed.firstWhere(
+					(category) =>
+						category.name.toLowerCase() == newCategory.name.toLowerCase(),
+				);
+				setState(() {
+					_selectedCategoryId = created.id;
+				});
+			} catch (_) {
+				if (mounted) {
+					AppFeedback.showSnackBar(context, 'Could not create category');
+				}
+			}
+			return;
+		}
+
+		setState(() {
+			_selectedCategoryId = selectedCategoryId;
+		});
+	}
+
 	String _dueDateLabel(DateTime? dueDate) {
 		if (dueDate == null) {
 			return 'No due date';
@@ -203,7 +350,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 			dueDate: _selectedDueDate,
 			isCompleted: _task.isCompleted,
 			priority: _selectedPriority,
-			categoryId: _task.categoryId,
+			categoryId: _selectedCategoryId,
 			repeatType: _task.repeatType,
 			archived: _task.archived,
 			deletedAt: _task.deletedAt,
@@ -231,6 +378,12 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 
 	@override
 	Widget build(BuildContext context) {
+		final categoriesAsync = ref.watch(categoriesProvider);
+		final categories = categoriesAsync.maybeWhen(
+			data: (items) => items,
+			orElse: () => const <Category>[],
+		);
+		final detailCategoryLabel = _categoryLabel(categories, _task.categoryId);
 		final overdue = _isOverdue(_task.dueDate);
 		final Widget bodyContent = _isEditing
 			? Form(
@@ -285,6 +438,38 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 								if (priority == null) return;
 								setState(() => _selectedPriority = priority);
 							},
+						),
+						const SizedBox(height: AppSpacing.lg),
+						Text('Category', style: AppTypography.labelLarge),
+						const SizedBox(height: AppSpacing.sm),
+						InkWell(
+							key: const ValueKey('task-edit-category-selector'),
+							onTap: _openCategorySelector,
+							borderRadius: BorderRadius.circular(AppRadius.lg),
+							child: Container(
+								padding: const EdgeInsets.all(AppSpacing.md),
+								decoration: BoxDecoration(
+									color: AppColors.surface,
+									border: Border.all(color: AppColors.border),
+									borderRadius: BorderRadius.circular(AppRadius.lg),
+								),
+								child: Row(
+									children: [
+										Expanded(
+											child: Text(
+												_categoryLabel(categories, _selectedCategoryId),
+												key: const ValueKey('task-edit-category-label'),
+												style: AppTypography.bodyMedium.copyWith(
+													color: _selectedCategoryId == null
+														? AppColors.textSecondary
+														: AppColors.textPrimary,
+												),
+											),
+										),
+										const Icon(Icons.keyboard_arrow_down),
+									],
+								),
+							),
 						),
 						const SizedBox(height: AppSpacing.lg),
 						Text('Due date', style: AppTypography.labelLarge),
@@ -377,6 +562,18 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 								Text(
 									'Priority: ${_priorityLabel(_task.priority)}',
 									style: AppTypography.bodyMedium,
+								),
+								const SizedBox(height: AppSpacing.sm),
+								Text('Category', style: AppTypography.labelMedium),
+								const SizedBox(height: AppSpacing.xs),
+								Text(
+									detailCategoryLabel,
+									key: const ValueKey('task-detail-category-label'),
+									style: AppTypography.bodyMedium.copyWith(
+										color: detailCategoryLabel == 'No category'
+											? AppColors.textSecondary
+											: AppColors.textPrimary,
+									),
 								),
 								const SizedBox(height: AppSpacing.sm),
 								Text('Due date', style: AppTypography.labelMedium),

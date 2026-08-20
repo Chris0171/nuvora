@@ -3,9 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nuvora/features/tasks/application/controllers/category_controller.dart';
+import 'package:nuvora/features/tasks/application/controllers/category_provider.dart';
 import 'package:nuvora/features/tasks/application/controllers/task_controller.dart';
 import 'package:nuvora/features/tasks/application/controllers/task_provider.dart';
+import 'package:nuvora/features/tasks/domain/entities/category.dart';
 import 'package:nuvora/features/tasks/domain/entities/task.dart';
+import 'package:nuvora/features/tasks/domain/repositories/category_repository.dart';
 import 'package:nuvora/features/tasks/domain/repositories/task_repository.dart';
 import 'package:nuvora/features/tasks/presentation/screens/create_task_screen.dart';
 
@@ -40,13 +44,42 @@ class _FakeRepo implements TaskRepository {
   Future<void> deleteTask(String taskId) async {}
 }
 
+class _FakeCategoryRepo implements CategoryRepository {
+  _FakeCategoryRepo({List<Category>? initial}) : categories = initial ?? <Category>[];
+
+  final List<Category> categories;
+
+  @override
+  Future<void> createCategory(Category category) async {
+    categories.add(
+      Category(
+        id: category.id.isEmpty ? 'cat-${categories.length + 1}' : category.id,
+        name: category.name,
+      ),
+    );
+  }
+
+  @override
+  Future<List<Category>> getCategories() async => List.unmodifiable(categories);
+}
+
 // ---------------------------------------------------------------------------
 // Widget builder – uses a parent route so navigation-back can be verified.
 // ---------------------------------------------------------------------------
-Widget _buildSubject(TaskController controller) => ProviderScope(
+Widget _buildSubject(
+  TaskController controller, {
+  _FakeCategoryRepo? categoryRepo,
+}) => ProviderScope(
       overrides: [
         taskControllerProvider.overrideWithValue(controller),
         tasksProvider.overrideWith((_) async => []),
+        categoryControllerProvider.overrideWithValue(
+          CategoryController(repository: categoryRepo ?? _FakeCategoryRepo()),
+        ),
+        categoriesProvider.overrideWith(
+          (ref) async =>
+              (categoryRepo ?? _FakeCategoryRepo()).getCategories(),
+        ),
       ],
       child: MaterialApp(
         home: Builder(
@@ -211,6 +244,38 @@ void main() {
       expect(repo.lastCreated, isNotNull);
       expect(repo.lastCreated!.dueDate, isNotNull);
       expect(_dateOnly(repo.lastCreated!.dueDate!), _dateOnly(DateTime.now()));
+    });
+
+    testWidgets('shows category selector and assigns selected category',
+        (tester) async {
+      final repo = _FakeRepo();
+      final categories = _FakeCategoryRepo(
+        initial: [
+          const Category(id: 'work', name: 'Work'),
+          const Category(id: 'personal', name: 'Personal'),
+        ],
+      );
+      final controller = TaskController(repository: repo);
+
+      await tester.pumpWidget(_buildSubject(controller, categoryRepo: categories));
+      await _navigateToCreate(tester);
+
+      expect(find.byKey(const ValueKey('create-task-category-selector')), findsOneWidget);
+      expect(find.text('No category'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('create-task-category-selector')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Work'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Work'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextFormField).first, 'Task with category');
+      await tester.tap(find.text('Create Task'));
+      await tester.pumpAndSettle();
+
+      expect(repo.lastCreated, isNotNull);
+      expect(repo.lastCreated!.categoryId, 'work');
     });
   });
 }

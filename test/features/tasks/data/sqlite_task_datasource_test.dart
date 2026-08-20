@@ -219,6 +219,52 @@ void main() {
       final result = (await ds.getTasks()).first;
       expect(result.dueDate, isNull);
     });
+
+    test('can assign categoryId when it was null', () async {
+      final task = _makeTask(id: 'cat-assign');
+      await ds.createTask(task);
+
+      final updated = task.copyWith(categoryId: 'work');
+      await ds.updateTask(updated);
+
+      final result = (await ds.getTasks()).first;
+      expect(result.categoryId, 'work');
+    });
+
+    test('can change categoryId to a different value', () async {
+      final task = _makeTask(id: 'cat-change').copyWith(categoryId: 'work');
+      await ds.createTask(task);
+
+      final updated = task.copyWith(categoryId: 'personal');
+      await ds.updateTask(updated);
+
+      final result = (await ds.getTasks()).first;
+      expect(result.categoryId, 'personal');
+    });
+
+    test('can remove categoryId by setting it to null', () async {
+      final base = _makeTask(id: 'cat-remove').copyWith(categoryId: 'work');
+      await ds.createTask(base);
+      final removed = Task(
+        id: base.id,
+        title: base.title,
+        description: base.description,
+        createdAt: base.createdAt,
+        updatedAt: base.updatedAt,
+        dueDate: base.dueDate,
+        isCompleted: base.isCompleted,
+        priority: base.priority,
+        categoryId: null,
+        repeatType: base.repeatType,
+        archived: base.archived,
+        deletedAt: base.deletedAt,
+      );
+
+      await ds.updateTask(removed);
+
+      final result = (await ds.getTasks()).first;
+      expect(result.categoryId, isNull);
+    });
   });
 
   // -------------------------------------------------------------------------

@@ -6,6 +6,8 @@ import 'package:nuvora/core/constants/repeat_type.dart';
 import 'package:nuvora/core/theme/app_design_system.dart';
 import 'package:nuvora/core/widgets/app_feedback.dart';
 import 'package:nuvora/core/widgets/app_motion.dart';
+import 'package:nuvora/features/tasks/application/controllers/category_provider.dart';
+import 'package:nuvora/features/tasks/domain/entities/category.dart';
 import 'package:nuvora/features/tasks/application/controllers/task_provider.dart';
 import 'package:nuvora/features/tasks/domain/entities/task.dart';
 
@@ -20,8 +22,151 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 	final _formKey = GlobalKey<FormState>();
 	final _titleController = TextEditingController();
 	final _descriptionController = TextEditingController();
+	String? _selectedCategoryId;
 	DateTime? _selectedDueDate;
 	bool _isSaving = false;
+
+	String _categoryLabel(List<Category> categories) {
+		if (_selectedCategoryId == null) {
+			return 'No category';
+		}
+
+		for (final category in categories) {
+			if (category.id == _selectedCategoryId) {
+				return category.name;
+			}
+		}
+
+		return 'No category';
+	}
+
+	Future<Category?> _showCreateCategoryDialog() async {
+		final controller = TextEditingController();
+		String? errorText;
+
+		final Category? result = await showDialog<Category>(
+			context: context,
+			builder: (context) {
+				return StatefulBuilder(
+					builder: (context, setDialogState) {
+						return AlertDialog(
+							title: const Text('Create category'),
+							content: TextField(
+								controller: controller,
+								autofocus: true,
+								decoration: InputDecoration(
+									hintText: 'Category name',
+									errorText: errorText,
+								),
+							),
+							actions: [
+								TextButton(
+									onPressed: () => Navigator.of(context).pop(),
+									child: const Text('Cancel'),
+								),
+								ElevatedButton(
+									onPressed: () {
+										final name = controller.text.trim();
+										if (name.isEmpty) {
+											setDialogState(() {
+												errorText = 'Category name is required';
+											});
+											return;
+										}
+										Navigator.of(context).pop(
+											Category(id: '', name: name),
+										);
+									},
+									child: const Text('Create'),
+								),
+							],
+						);
+					},
+				);
+			},
+		);
+
+		controller.dispose();
+		return result;
+	}
+
+	Future<void> _openCategorySelector() async {
+		final categories = await ref.read(categoriesProvider.future);
+		if (!mounted) return;
+
+		final selectedCategoryId = await showModalBottomSheet<String?>(
+			context: context,
+			showDragHandle: true,
+			builder: (context) {
+				return SafeArea(
+					child: Column(
+						mainAxisSize: MainAxisSize.min,
+						children: [
+							ListTile(
+								title: const Text('No category'),
+								leading: _selectedCategoryId == null
+									? const Icon(Icons.check_circle, color: AppColors.primary)
+									: const Icon(Icons.circle_outlined),
+								onTap: () => Navigator.of(context).pop('__none__'),
+							),
+							...categories.map(
+								(category) => ListTile(
+									title: Text(category.name),
+									leading: _selectedCategoryId == category.id
+										? const Icon(Icons.check_circle, color: AppColors.primary)
+										: const Icon(Icons.circle_outlined),
+									onTap: () => Navigator.of(context).pop(category.id),
+								),
+							),
+							ListTile(
+								leading: const Icon(Icons.add),
+								title: const Text('Create category'),
+								onTap: () => Navigator.of(context).pop('__create__'),
+							),
+						],
+					),
+				);
+			},
+		);
+
+		if (!mounted || selectedCategoryId == null) {
+			return;
+		}
+
+		if (selectedCategoryId == '__none__') {
+			setState(() {
+				_selectedCategoryId = null;
+			});
+			return;
+		}
+
+		if (selectedCategoryId == '__create__') {
+			final newCategory = await _showCreateCategoryDialog();
+			if (newCategory == null) return;
+			try {
+				await ref.read(categoryControllerProvider).createCategory(newCategory);
+				ref.invalidate(categoriesProvider);
+				final refreshed = await ref.read(categoriesProvider.future);
+				if (!mounted) return;
+				final Category created = refreshed.firstWhere(
+					(category) =>
+						category.name.toLowerCase() == newCategory.name.toLowerCase(),
+				);
+				setState(() {
+					_selectedCategoryId = created.id;
+				});
+			} catch (_) {
+				if (mounted) {
+					AppFeedback.showSnackBar(context, 'Could not create category');
+				}
+			}
+			return;
+		}
+
+		setState(() {
+			_selectedCategoryId = selectedCategoryId;
+		});
+	}
 
 	Future<void> _pickDueDate() async {
 		final now = DateTime.now();
@@ -92,7 +237,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 			dueDate: _selectedDueDate,
 			isCompleted: false,
 			priority: Priority.medium,
-			categoryId: null,
+			categoryId: _selectedCategoryId,
 			repeatType: RepeatType.none,
 		);
 
@@ -113,6 +258,12 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 
 	@override
 	Widget build(BuildContext context) {
+		final categoriesAsync = ref.watch(categoriesProvider);
+		final categories = categoriesAsync.maybeWhen(
+			data: (items) => items,
+			orElse: () => const <Category>[],
+		);
+
 		return Scaffold(
 			appBar: AppBar(
 				title: const Text('New Task'),
@@ -166,6 +317,43 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 									style: AppTypography.bodyMedium,
 									minLines: 3,
 									maxLines: 5,
+								),
+								const SizedBox(height: AppSpacing.xl),
+								Text(
+									'Category',
+									style: AppTypography.labelLarge.copyWith(
+										color: AppColors.textPrimary,
+									),
+								),
+								const SizedBox(height: AppSpacing.md),
+								InkWell(
+									key: const ValueKey('create-task-category-selector'),
+									onTap: _openCategorySelector,
+									borderRadius: BorderRadius.circular(AppRadius.lg),
+									child: Container(
+										padding: const EdgeInsets.all(AppSpacing.md),
+										decoration: BoxDecoration(
+											color: AppColors.surface,
+											border: Border.all(color: AppColors.border),
+											borderRadius: BorderRadius.circular(AppRadius.lg),
+										),
+										child: Row(
+											children: [
+												Expanded(
+													child: Text(
+														_categoryLabel(categories),
+														key: const ValueKey('create-task-category-label'),
+														style: AppTypography.bodyMedium.copyWith(
+															color: _selectedCategoryId == null
+																? AppColors.textSecondary
+																: AppColors.textPrimary,
+														),
+													),
+												),
+												const Icon(Icons.keyboard_arrow_down),
+											],
+										),
+									),
 								),
 								const SizedBox(height: AppSpacing.xl),
 								Text(

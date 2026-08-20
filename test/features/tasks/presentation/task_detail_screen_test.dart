@@ -3,9 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nuvora/core/constants/priority.dart';
 import 'package:nuvora/core/constants/repeat_type.dart';
+import 'package:nuvora/features/tasks/application/controllers/category_controller.dart';
+import 'package:nuvora/features/tasks/application/controllers/category_provider.dart';
 import 'package:nuvora/features/tasks/application/controllers/task_controller.dart';
 import 'package:nuvora/features/tasks/application/controllers/task_provider.dart';
+import 'package:nuvora/features/tasks/domain/entities/category.dart';
 import 'package:nuvora/features/tasks/domain/entities/task.dart';
+import 'package:nuvora/features/tasks/domain/repositories/category_repository.dart';
 import 'package:nuvora/features/tasks/domain/repositories/task_repository.dart';
 import 'package:nuvora/features/tasks/presentation/screens/task_detail_screen.dart';
 
@@ -35,6 +39,25 @@ class _FakeRepo implements TaskRepository {
   }) async {}
 }
 
+class _FakeCategoryRepo implements CategoryRepository {
+  _FakeCategoryRepo({List<Category>? initial}) : categories = initial ?? <Category>[];
+
+  final List<Category> categories;
+
+  @override
+  Future<void> createCategory(Category category) async {
+    categories.add(
+      Category(
+        id: category.id.isEmpty ? 'cat-${categories.length + 1}' : category.id,
+        name: category.name,
+      ),
+    );
+  }
+
+  @override
+  Future<List<Category>> getCategories() async => List.unmodifiable(categories);
+}
+
 Task _makeTask({
   String id = 'task-id-1',
   String title = 'Task title',
@@ -57,11 +80,21 @@ Task _makeTask({
 
 DateTime _dateOnly(DateTime value) => DateTime(value.year, value.month, value.day);
 
-Widget _buildSubject({required Task task, required TaskController controller}) =>
+Widget _buildSubject({
+  required Task task,
+  required TaskController controller,
+  _FakeCategoryRepo? categoryRepo,
+}) =>
     ProviderScope(
       overrides: [
         taskControllerProvider.overrideWithValue(controller),
         tasksProvider.overrideWith((_) async => <Task>[task]),
+        categoryControllerProvider.overrideWithValue(
+          CategoryController(repository: categoryRepo ?? _FakeCategoryRepo()),
+        ),
+        categoriesProvider.overrideWith(
+          (ref) async => (categoryRepo ?? _FakeCategoryRepo()).getCategories(),
+        ),
       ],
       child: MaterialApp(home: TaskDetailScreen(task: task)),
     );
@@ -129,6 +162,7 @@ void main() {
       await tester.tap(find.text('High').last);
       await tester.pumpAndSettle();
 
+      await tester.ensureVisible(find.text('Save changes'));
       await tester.tap(find.text('Save changes'));
       await tester.pumpAndSettle();
 
@@ -157,6 +191,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byKey(const ValueKey('task-edit-title-field')), '   ');
+      await tester.ensureVisible(find.text('Save changes'));
       await tester.tap(find.text('Save changes'));
       await tester.pumpAndSettle();
 
@@ -176,6 +211,23 @@ void main() {
       expect(find.text('Due date'), findsOneWidget);
       expect(find.text('No due date'), findsOneWidget);
       expect(find.text('Overdue'), findsNothing);
+    });
+
+    testWidgets('shows category name when category exists', (tester) async {
+      final repo = _FakeRepo();
+      final categories = _FakeCategoryRepo(
+        initial: [const Category(id: 'work', name: 'Work')],
+      );
+      final task = _makeTask().copyWith(categoryId: 'work');
+      final controller = TaskController(repository: repo);
+
+      await tester.pumpWidget(
+        _buildSubject(task: task, controller: controller, categoryRepo: categories),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('task-detail-category-label')), findsOneWidget);
+      expect(find.text('Work'), findsOneWidget);
     });
 
     testWidgets('shows formatted future due date', (tester) async {
@@ -225,6 +277,7 @@ void main() {
       await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
 
+      await tester.ensureVisible(find.text('Save changes'));
       await tester.tap(find.text('Save changes'));
       await tester.pumpAndSettle();
 
@@ -246,12 +299,78 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey('task-edit-clear-date-button')));
       await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Save changes'));
       await tester.tap(find.text('Save changes'));
       await tester.pumpAndSettle();
 
       expect(repo.lastUpdated, isNotNull);
       expect(repo.lastUpdated!.dueDate, isNull);
       expect(find.text('No due date'), findsOneWidget);
+    });
+
+    testWidgets('edit mode shows existing category and can change it',
+        (tester) async {
+      final repo = _FakeRepo();
+      final categories = _FakeCategoryRepo(
+        initial: const [
+          Category(id: 'work', name: 'Work'),
+          Category(id: 'personal', name: 'Personal'),
+        ],
+      );
+      final task = _makeTask().copyWith(categoryId: 'work');
+      final controller = TaskController(repository: repo);
+
+      await tester.pumpWidget(
+        _buildSubject(task: task, controller: controller, categoryRepo: categories),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Edit'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Work'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('task-edit-category-selector')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Personal'));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Save changes'));
+      await tester.tap(find.text('Save changes'));
+      await tester.pumpAndSettle();
+
+      expect(repo.lastUpdated, isNotNull);
+      expect(repo.lastUpdated!.categoryId, 'personal');
+    });
+
+    testWidgets('edit mode can remove category and save null', (tester) async {
+      final repo = _FakeRepo();
+      final categories = _FakeCategoryRepo(
+        initial: const [Category(id: 'work', name: 'Work')],
+      );
+      final task = _makeTask().copyWith(categoryId: 'work');
+      final controller = TaskController(repository: repo);
+
+      await tester.pumpWidget(
+        _buildSubject(task: task, controller: controller, categoryRepo: categories),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Edit'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('task-edit-category-selector')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('No category'));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Save changes'));
+      await tester.tap(find.text('Save changes'));
+      await tester.pumpAndSettle();
+
+      expect(repo.lastUpdated, isNotNull);
+      expect(repo.lastUpdated!.categoryId, isNull);
+      expect(find.text('No category'), findsOneWidget);
     });
   });
 }

@@ -10,12 +10,14 @@ class TaskItem extends StatefulWidget {
 	const TaskItem({
 		super.key,
 		required this.task,
+		this.categoryName,
 		this.onTap,
 		this.onDelete,
 		this.onToggleCompleted,
 	});
 
 	final Task task;
+	final String? categoryName;
 	final VoidCallback? onTap;
 	final VoidCallback? onDelete;
 	final ValueChanged<bool>? onToggleCompleted;
@@ -71,7 +73,9 @@ class _TaskItemState extends State<TaskItem> {
 	@override
 	Widget build(BuildContext context) {
 		final dueDate = _formatDueDate();
-		final showMeta = widget.task.priority != Priority.medium || dueDate != null;
+		final showCategory = widget.categoryName != null && widget.categoryName!.trim().isNotEmpty;
+		final showMeta =
+			widget.task.priority != Priority.medium || dueDate != null || showCategory;
 		final isDue = widget.task.dueDate != null &&
 			widget.task.dueDate!.isBefore(DateTime.now()) &&
 			!widget.task.isCompleted;
@@ -248,6 +252,23 @@ class _TaskItemState extends State<TaskItem> {
 																		color: AppColors.textSecondary,
 																	),
 																),
+																if (showCategory)
+																	Container(
+																		padding: const EdgeInsets.symmetric(
+																			horizontal: AppSpacing.sm,
+																			vertical: AppSpacing.xs,
+																		),
+																		decoration: BoxDecoration(
+																			color: AppColors.surfaceSecondary,
+																			borderRadius: BorderRadius.circular(AppRadius.full),
+																		),
+																		child: Text(
+																			widget.categoryName!,
+																			style: AppTypography.labelSmall.copyWith(
+																				color: AppColors.textSecondary,
+																			),
+																		),
+																	),
 																if (dueDate != null)
 																	Row(
 																		mainAxisSize: MainAxisSize.min,
