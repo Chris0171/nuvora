@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nuvora/core/theme/app_design_system.dart';
+import 'package:nuvora/core/widgets/app_icon_action_button.dart';
 import 'package:nuvora/core/widgets/app_motion.dart';
 import 'package:nuvora/features/notes/domain/entities/note.dart';
 
@@ -44,14 +45,17 @@ class _NoteItemState extends State<NoteItem> {
 	Widget build(BuildContext context) {
 		final contentLines = widget.note.content.length > 140 ? 4 : 3;
 		final dateLabel = _formatDate(widget.note.createdAt);
+		final motionDuration = AppMotion.resolvedDuration(context, AppMotion.duration);
+		final shortMotionDuration = AppMotion.resolvedDuration(context, AppMotion.shortDuration);
+		final motionCurve = AppMotion.resolvedCurve(context, AppMotion.curve);
 
 		return AnimatedScale(
-			duration: AppMotion.shortDuration,
+			duration: shortMotionDuration,
 			scale: _pressed ? 0.985 : 1,
-			curve: AppMotion.curve,
+			curve: motionCurve,
 			child: AnimatedContainer(
-				duration: AppMotion.duration,
-				curve: AppMotion.curve,
+				duration: motionDuration,
+				curve: motionCurve,
 				decoration: BoxDecoration(
 					borderRadius: BorderRadius.circular(AppRadius.lg),
 					boxShadow: [
@@ -95,30 +99,23 @@ class _NoteItemState extends State<NoteItem> {
 												),
 												const SizedBox(width: AppSpacing.sm),
 												if (widget.note.isPinned)
-													AnimatedOpacity(
-														duration: AppMotion.shortDuration,
-														opacity: 1,
-														child: Container(
-															margin: const EdgeInsets.only(right: AppSpacing.xs),
-															padding: const EdgeInsets.all(AppSpacing.xs),
-															decoration: BoxDecoration(
-																color: AppColors.surfaceSecondary,
-																borderRadius: BorderRadius.circular(AppRadius.full),
-															),
-															child: const Icon(
-																Icons.push_pin,
-																size: 14,
-																color: AppColors.textSecondary,
-															),
+													Container(
+														margin: const EdgeInsets.only(right: AppSpacing.xs),
+														padding: const EdgeInsets.all(AppSpacing.xs),
+														decoration: BoxDecoration(
+															color: AppColors.surfaceSecondary,
+															borderRadius: BorderRadius.circular(AppRadius.full),
+														),
+														child: const Icon(
+															Icons.push_pin,
+															size: 14,
+															color: AppColors.textSecondary,
 														),
 													),
-												IconButton(
+												AppIconActionButton(
+													icon: Icons.close,
+													label: 'Delete note ${widget.note.title}',
 													onPressed: widget.onDelete,
-													icon: const Icon(Icons.close),
-													color: AppColors.textTertiary,
-													iconSize: 20,
-													padding: EdgeInsets.zero,
-													constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
 												),
 											],
 										),

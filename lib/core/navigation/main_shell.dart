@@ -109,11 +109,15 @@ class _AnimatedViewport extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (AppMotion.prefersReducedMotion(context)) {
+      return child;
+    }
+
     return TweenAnimationBuilder<double>(
       key: ValueKey<int>(selectedIndex),
       tween: Tween<double>(begin: 0, end: 1),
-      duration: AppMotion.duration,
-      curve: AppMotion.curve,
+      duration: AppMotion.resolvedDuration(context, AppMotion.duration),
+      curve: AppMotion.resolvedCurve(context, AppMotion.curve),
       builder: (context, value, child) {
         return Opacity(
           opacity: value,

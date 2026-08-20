@@ -137,7 +137,7 @@ class InsightsScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: AppSpacing.lg),
                       ElevatedButton.icon(
-                        onPressed: () {},
+                        onPressed: null,
                         icon: const Icon(Icons.auto_graph),
                         label: const Text('Generate first insights'),
                       ),

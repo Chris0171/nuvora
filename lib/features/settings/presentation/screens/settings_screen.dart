@@ -57,8 +57,7 @@ class SettingsScreen extends ConsumerWidget {
 							style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
 						),
 						const SizedBox(height: AppSpacing.md),
-						AnimatedContainer(
-							duration: AppMotion.duration,
+						Container(
 							padding: const EdgeInsets.symmetric(
 								horizontal: AppSpacing.md,
 								vertical: AppSpacing.sm,
@@ -405,32 +404,30 @@ class _NuvoraProCard extends StatelessWidget {
 					),
 				],
 			),
-			child: const Column(
+			child: Column(
 				crossAxisAlignment: CrossAxisAlignment.start,
 				children: [
 					Text(
 						'Nuvora Pro',
-						style: TextStyle(
-							color: Colors.white,
-							fontSize: 20,
-							fontWeight: FontWeight.w700,
-						),
+						style: AppTypography.headlineLarge.copyWith(color: Colors.white),
 					),
-					SizedBox(height: AppSpacing.sm),
+					const SizedBox(height: AppSpacing.sm),
 					Text(
 						'Premium planning tools designed for deeper clarity and momentum.',
-						style: TextStyle(color: Colors.white70),
+						style: AppTypography.bodySmall.copyWith(
+							color: Colors.white.withValues(alpha: 0.7),
+						),
 					),
-					SizedBox(height: AppSpacing.md),
-					Text('Advanced Insights', style: TextStyle(color: Colors.white70)),
-					SizedBox(height: AppSpacing.xs),
-					Text('Unlimited Statistics', style: TextStyle(color: Colors.white70)),
-					SizedBox(height: AppSpacing.xs),
-					Text('Smart Planning', style: TextStyle(color: Colors.white70)),
-					SizedBox(height: AppSpacing.xs),
-					Text('Cloud Sync', style: TextStyle(color: Colors.white70)),
-					SizedBox(height: AppSpacing.xs),
-					Text('AI Assistant', style: TextStyle(color: Colors.white70)),
+					const SizedBox(height: AppSpacing.md),
+					Text('Advanced Insights', style: AppTypography.bodySmall.copyWith(color: Colors.white.withValues(alpha: 0.7))),
+					const SizedBox(height: AppSpacing.xs),
+					Text('Unlimited Statistics', style: AppTypography.bodySmall.copyWith(color: Colors.white.withValues(alpha: 0.7))),
+					const SizedBox(height: AppSpacing.xs),
+					Text('Smart Planning', style: AppTypography.bodySmall.copyWith(color: Colors.white.withValues(alpha: 0.7))),
+					const SizedBox(height: AppSpacing.xs),
+					Text('Cloud Sync', style: AppTypography.bodySmall.copyWith(color: Colors.white.withValues(alpha: 0.7))),
+					const SizedBox(height: AppSpacing.xs),
+					Text('AI Assistant', style: AppTypography.bodySmall.copyWith(color: Colors.white.withValues(alpha: 0.7))),
 				],
 			),
 		);
@@ -502,22 +499,26 @@ class _ToggleRow extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		return Padding(
-			padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-			child: Row(
-				children: [
-					Expanded(
-						child: Text(item.label, style: AppTypography.bodyMedium),
+		return MergeSemantics(
+			child: Padding(
+				padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+				child: Semantics(
+					enabled: false,
+					label: item.label,
+					child: Row(
+						children: [
+							Expanded(
+								child: Text(item.label, style: AppTypography.bodyMedium),
+							),
+							Switch(
+								value: item.value,
+								onChanged: null,
+								activeThumbColor: AppColors.primary,
+								activeTrackColor: AppColors.primaryLight,
+							),
+						],
 					),
-					IgnorePointer(
-						child: Switch(
-							value: item.value,
-							onChanged: (_) {},
-							activeThumbColor: AppColors.primary,
-							activeTrackColor: AppColors.primaryLight,
-						),
-					),
-				],
+				),
 			),
 		);
 	}

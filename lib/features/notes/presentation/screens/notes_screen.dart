@@ -5,6 +5,7 @@ import 'package:nuvora/core/navigation/app_page_route.dart';
 import 'package:nuvora/core/productivity/productivity_analyzer.dart';
 import 'package:nuvora/core/theme/app_design_system.dart';
 import 'package:nuvora/core/widgets/app_feedback.dart';
+import 'package:nuvora/core/widgets/app_icon_action_button.dart';
 import 'package:nuvora/core/widgets/app_motion.dart';
 import 'package:nuvora/core/widgets/app_responsive.dart';
 import 'package:nuvora/features/notes/application/controllers/note_provider.dart';
@@ -20,6 +21,8 @@ class NotesScreen extends ConsumerWidget {
 		final horizontalPadding = AppResponsive.pagePadding(context);
 		final maxWidth = AppResponsive.maxContentWidth(context);
 		final titleScale = AppResponsive.titleScale(context);
+		final motionDuration = AppMotion.resolvedDuration(context, AppMotion.duration);
+		final motionCurve = AppMotion.resolvedCurve(context, AppMotion.curve);
 
 		final notesAsync = ref.watch(notesProvider);
 		final searchQuery = ref.watch(noteSearchQueryProvider);
@@ -170,9 +173,9 @@ class NotesScreen extends ConsumerWidget {
 					),
 					SliverToBoxAdapter(
 						child: AnimatedSwitcher(
-							duration: AppMotion.duration,
-							switchInCurve: AppMotion.curve,
-							switchOutCurve: AppMotion.curve,
+							duration: motionDuration,
+							switchInCurve: motionCurve,
+							switchOutCurve: motionCurve,
 							transitionBuilder: (child, animation) {
 								return FadeTransition(
 									opacity: animation,
@@ -308,6 +311,7 @@ class _NotesBody extends ConsumerWidget {
 
 		final pinnedNotes = notes.where((note) => note.isPinned).toList();
 		final recentNotes = [...notes]..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+		final recentUnpinnedNotes = recentNotes.where((note) => !note.isPinned).toList();
 		final suggestedReviewCount = recentNotes.take(3).length;
 		final recentCount = ProductivityAnalyzer.getRecentNotesCount(notes);
 
@@ -379,41 +383,43 @@ class _NotesBody extends ConsumerWidget {
 					_SectionHeader(
 						title: 'Recent notes',
 						icon: Icons.history,
-						count: recentNotes.where((note) => !note.isPinned).length,
+						count: recentUnpinnedNotes.length,
 					),
 					const SizedBox(height: AppSpacing.md),
-					...recentNotes.where((note) => !note.isPinned).map((note) {
-						return Padding(
-							padding: const EdgeInsets.only(bottom: AppSpacing.md),
-							child: NoteItem(
-								key: ValueKey(note.id),
-								note: note,
-								onDelete: () => _deleteNote(context, ref, note.id),
-							),
-						);
-					}),
+					ListView.builder(
+						shrinkWrap: true,
+						physics: const NeverScrollableScrollPhysics(),
+						itemCount: recentUnpinnedNotes.length,
+						itemBuilder: (context, index) {
+							final note = recentUnpinnedNotes[index];
+							return Padding(
+								padding: const EdgeInsets.only(bottom: AppSpacing.md),
+								child: NoteItem(
+									key: ValueKey(note.id),
+									note: note,
+									onDelete: () => _deleteNote(context, ref, note.id),
+								),
+							);
+						},
+					),
 					const SizedBox(height: AppSpacing.lg),
 					const _SectionHeader(
 						title: 'Suggested review',
 						icon: Icons.lightbulb_outline,
 					),
 					const SizedBox(height: AppSpacing.md),
-					AnimatedOpacity(
-						duration: AppMotion.duration,
-						opacity: 1,
-						child: Container(
-							width: double.infinity,
-							padding: const EdgeInsets.all(AppSpacing.md),
-							decoration: BoxDecoration(
-								color: AppColors.surfaceSecondary,
-								borderRadius: BorderRadius.circular(AppRadius.lg),
-								border: Border.all(color: AppColors.border),
-							),
-							child: Text(
-								'Review $suggestedReviewCount recent notes to keep ideas fresh.',
-								style: AppTypography.bodySmall.copyWith(
-									color: AppColors.textSecondary,
-								),
+					Container(
+						width: double.infinity,
+						padding: const EdgeInsets.all(AppSpacing.md),
+						decoration: BoxDecoration(
+							color: AppColors.surfaceSecondary,
+							borderRadius: BorderRadius.circular(AppRadius.lg),
+							border: Border.all(color: AppColors.border),
+						),
+						child: Text(
+							'Review $suggestedReviewCount recent notes to keep ideas fresh.',
+							style: AppTypography.bodySmall.copyWith(
+								color: AppColors.textSecondary,
 							),
 						),
 					),
@@ -527,9 +533,10 @@ class _PinnedNoteCard extends StatelessWidget {
 						children: [
 							const Icon(Icons.push_pin, size: 16, color: AppColors.warning),
 							const Spacer(),
-							IconButton(
+							AppIconActionButton(
+								icon: Icons.close,
+								label: 'Delete pinned note ${note.title}',
 								onPressed: onDelete,
-								icon: const Icon(Icons.close, size: 18),
 							),
 						],
 					),

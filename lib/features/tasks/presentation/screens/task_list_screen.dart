@@ -19,6 +19,8 @@ class TaskListScreen extends ConsumerWidget {
 	@override
 	Widget build(BuildContext context, WidgetRef ref) {
 		final horizontalPadding = AppResponsive.pagePadding(context);
+		final motionDuration = AppMotion.resolvedDuration(context, AppMotion.duration);
+		final motionCurve = AppMotion.resolvedCurve(context, AppMotion.curve);
 		final tasksAsync = ref.watch(tasksProvider);
 		final stateChild = tasksAsync.when(
 			data: (tasks) {
@@ -175,9 +177,9 @@ class TaskListScreen extends ConsumerWidget {
 		);
 
 		return AnimatedSwitcher(
-			duration: AppMotion.duration,
-			switchInCurve: AppMotion.curve,
-			switchOutCurve: AppMotion.curve,
+			duration: motionDuration,
+			switchInCurve: motionCurve,
+			switchOutCurve: motionCurve,
 			transitionBuilder: (child, animation) {
 				return FadeTransition(
 					opacity: animation,
@@ -282,7 +284,12 @@ class _TaskPrioritySection extends StatelessWidget {
 						),
 					)
 				else
-					...tasks.map(childBuilder),
+					ListView.builder(
+						shrinkWrap: true,
+						physics: const NeverScrollableScrollPhysics(),
+						itemCount: tasks.length,
+						itemBuilder: (context, index) => childBuilder(tasks[index]),
+					),
 				const SizedBox(height: AppSpacing.sm),
 			],
 		);

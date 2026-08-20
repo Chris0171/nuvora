@@ -7,6 +7,20 @@ class AppMotion {
 	static const Duration routeDuration = Duration(milliseconds: 260);
 	static const Duration reverseRouteDuration = Duration(milliseconds: 220);
 	static const Offset subtleOffset = Offset(0, 0.02);
+
+	static bool prefersReducedMotion(BuildContext context) {
+		final mediaQuery = MediaQuery.maybeOf(context);
+		return mediaQuery?.disableAnimations ??
+			WidgetsBinding.instance.platformDispatcher.accessibilityFeatures.disableAnimations;
+	}
+
+	static Duration resolvedDuration(BuildContext context, Duration duration) {
+		return prefersReducedMotion(context) ? Duration.zero : duration;
+	}
+
+	static Curve resolvedCurve(BuildContext context, Curve animationCurve) {
+		return prefersReducedMotion(context) ? Curves.linear : animationCurve;
+	}
 }
 
 class FadeSlideIn extends StatelessWidget {
@@ -25,10 +39,14 @@ class FadeSlideIn extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
+		if (AppMotion.prefersReducedMotion(context)) {
+			return child;
+		}
+
 		return TweenAnimationBuilder<double>(
 			tween: Tween<double>(begin: 0, end: 1),
-			duration: duration,
-			curve: curve,
+			duration: AppMotion.resolvedDuration(context, duration),
+			curve: AppMotion.resolvedCurve(context, curve),
 			builder: (context, value, child) {
 				return Opacity(
 					opacity: value,

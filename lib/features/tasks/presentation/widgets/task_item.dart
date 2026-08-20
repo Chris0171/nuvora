@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:nuvora/core/constants/priority.dart';
 import 'package:nuvora/core/productivity/productivity_analyzer.dart';
 import 'package:nuvora/core/theme/app_design_system.dart';
+import 'package:nuvora/core/widgets/app_icon_action_button.dart';
 import 'package:nuvora/core/widgets/app_motion.dart';
 import 'package:nuvora/features/tasks/domain/entities/task.dart';
 
@@ -74,11 +75,17 @@ class _TaskItemState extends State<TaskItem> {
 		final isDue = widget.task.dueDate != null &&
 			widget.task.dueDate!.isBefore(DateTime.now()) &&
 			!widget.task.isCompleted;
+		final completionLabel = widget.task.isCompleted
+			? 'Mark ${widget.task.title} as incomplete'
+			: 'Mark ${widget.task.title} as completed';
+		final motionDuration = AppMotion.resolvedDuration(context, AppMotion.duration);
+		final shortMotionDuration = AppMotion.resolvedDuration(context, AppMotion.shortDuration);
+		final motionCurve = AppMotion.resolvedCurve(context, AppMotion.curve);
 
 		return AnimatedScale(
-			duration: AppMotion.shortDuration,
+			duration: shortMotionDuration,
 			scale: _pressed ? 0.985 : 1,
-			curve: AppMotion.curve,
+			curve: motionCurve,
 			child: Dismissible(
 				key: ValueKey('task-${widget.task.id}'),
 				background: const _SwipeBackground(
@@ -102,8 +109,8 @@ class _TaskItemState extends State<TaskItem> {
 					return false;
 				},
 				child: AnimatedContainer(
-					duration: AppMotion.duration,
-					curve: AppMotion.curve,
+					duration: motionDuration,
+					curve: motionCurve,
 					decoration: BoxDecoration(
 						borderRadius: BorderRadius.circular(AppRadius.lg),
 						boxShadow: [
@@ -126,8 +133,8 @@ class _TaskItemState extends State<TaskItem> {
 							),
 						),
 						child: AnimatedContainer(
-							duration: AppMotion.duration,
-							curve: AppMotion.curve,
+							duration: motionDuration,
+							curve: motionCurve,
 							decoration: BoxDecoration(
 								color: widget.task.isCompleted
 									? AppColors.surfaceSecondary
@@ -147,23 +154,23 @@ class _TaskItemState extends State<TaskItem> {
 										children: [
 											Padding(
 												padding: const EdgeInsets.only(
-													top: AppSpacing.xs,
-													right: AppSpacing.lg,
+													right: AppSpacing.md,
 												),
 												child: Stack(
 													alignment: Alignment.center,
 													children: [
-														_AnimatedCheckmark(
-															value: widget.task.isCompleted,
-															onChanged: (value) => widget.onToggleCompleted?.call(value),
+														IgnorePointer(
+															child: _AnimatedCheckmark(value: widget.task.isCompleted),
 														),
 														SizedBox(
-															width: 24,
-															height: 24,
+															width: 48,
+															height: 48,
 															child: Opacity(
 																opacity: 0.01,
 																child: Checkbox(
 																	value: widget.task.isCompleted,
+																	semanticLabel: completionLabel,
+																	materialTapTargetSize: MaterialTapTargetSize.padded,
 																	onChanged: (value) {
 																		if (value == null) return;
 																		widget.onToggleCompleted?.call(value);
@@ -274,13 +281,10 @@ class _TaskItemState extends State<TaskItem> {
 											),
 											Padding(
 												padding: const EdgeInsets.only(left: AppSpacing.md),
-												child: IconButton(
+												child: AppIconActionButton(
+													icon: Icons.close,
+													label: 'Delete task ${widget.task.title}',
 													onPressed: widget.onDelete,
-													icon: const Icon(Icons.close),
-													color: AppColors.textTertiary,
-													iconSize: 20,
-													padding: EdgeInsets.zero,
-													constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
 												),
 											),
 										],
@@ -296,34 +300,34 @@ class _TaskItemState extends State<TaskItem> {
 }
 
 class _AnimatedCheckmark extends StatelessWidget {
-	const _AnimatedCheckmark({required this.value, required this.onChanged});
+	const _AnimatedCheckmark({required this.value});
 
 	final bool value;
-	final ValueChanged<bool>? onChanged;
 
 	@override
 	Widget build(BuildContext context) {
-		return GestureDetector(
-			onTap: () => onChanged?.call(!value),
-			child: AnimatedContainer(
-				duration: AppMotion.duration,
-				curve: AppMotion.curve,
-				width: 24,
-				height: 24,
-				decoration: BoxDecoration(
-					shape: BoxShape.circle,
-					color: value ? AppColors.primary : Colors.transparent,
-					border: Border.all(
-						color: value ? AppColors.primary : AppColors.textTertiary,
-						width: 1.6,
-					),
+		final motionDuration = AppMotion.resolvedDuration(context, AppMotion.duration);
+		final shortMotionDuration = AppMotion.resolvedDuration(context, AppMotion.shortDuration);
+		final motionCurve = AppMotion.resolvedCurve(context, AppMotion.curve);
+
+		return AnimatedContainer(
+			duration: motionDuration,
+			curve: motionCurve,
+			width: 24,
+			height: 24,
+			decoration: BoxDecoration(
+				shape: BoxShape.circle,
+				color: value ? AppColors.primary : Colors.transparent,
+				border: Border.all(
+					color: value ? AppColors.primary : AppColors.textSecondary,
+					width: 1.8,
 				),
-				child: AnimatedScale(
-					duration: AppMotion.shortDuration,
-					scale: value ? 1 : 0,
-					curve: AppMotion.curve,
-					child: const Icon(Icons.check, size: 14, color: Colors.white),
-				),
+			),
+			child: AnimatedScale(
+				duration: shortMotionDuration,
+				scale: value ? 1 : 0,
+				curve: motionCurve,
+				child: const Icon(Icons.check, size: 14, color: Colors.white),
 			),
 		);
 	}
