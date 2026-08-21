@@ -63,6 +63,7 @@ Task _makeTask({
   String title = 'Task title',
   String? description = 'Task description',
   Priority priority = Priority.medium,
+  RepeatType repeatType = RepeatType.none,
   DateTime? dueDate,
   bool isCompleted = false,
 }) =>
@@ -75,7 +76,7 @@ Task _makeTask({
       dueDate: dueDate,
       isCompleted: isCompleted,
       priority: priority,
-      repeatType: RepeatType.none,
+      repeatType: repeatType,
     );
 
 DateTime _dateOnly(DateTime value) => DateTime(value.year, value.month, value.day);
@@ -114,6 +115,8 @@ void main() {
       expect(find.text('Task title'), findsOneWidget);
       expect(find.text('Task description'), findsOneWidget);
       expect(find.text('Priority: Medium'), findsOneWidget);
+      expect(find.byKey(const ValueKey('task-detail-repeat-label')), findsOneWidget);
+      expect(find.text('No repeat'), findsOneWidget);
       expect(find.text('Completed'), findsOneWidget);
       final switchTile = tester.widget<SwitchListTile>(find.byType(SwitchListTile));
       expect(switchTile.value, isFalse);
@@ -134,6 +137,7 @@ void main() {
       expect(find.byKey(const ValueKey('task-edit-title-field')), findsOneWidget);
       expect(find.byKey(const ValueKey('task-edit-description-field')), findsOneWidget);
       expect(find.byKey(const ValueKey('task-edit-priority-field')), findsOneWidget);
+		expect(find.byKey(const ValueKey('task-edit-repeat-field')), findsOneWidget);
     });
 
     testWidgets('saves edited title, description and priority using updateTask',
@@ -171,11 +175,50 @@ void main() {
       expect(repo.lastUpdated!.title, 'Updated title');
       expect(repo.lastUpdated!.description, 'Updated description');
       expect(repo.lastUpdated!.priority, Priority.high);
+      expect(repo.lastUpdated!.repeatType, RepeatType.none);
 
       expect(find.text('Task Detail'), findsOneWidget);
       expect(find.text('Updated title'), findsOneWidget);
       expect(find.text('Updated description'), findsOneWidget);
       expect(find.text('Priority: High'), findsOneWidget);
+    });
+
+    testWidgets('shows repeat value in detail when task is recurring',
+      (tester) async {
+      final repo = _FakeRepo();
+      final task = _makeTask(repeatType: RepeatType.weekly);
+      final controller = TaskController(repository: repo);
+
+      await tester.pumpWidget(_buildSubject(task: task, controller: controller));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('task-detail-repeat-label')), findsOneWidget);
+      expect(find.text('Weekly'), findsOneWidget);
+    });
+
+    testWidgets('edits repeat and persists updated value', (tester) async {
+      final repo = _FakeRepo();
+      final task = _makeTask(repeatType: RepeatType.none);
+      final controller = TaskController(repository: repo);
+
+      await tester.pumpWidget(_buildSubject(task: task, controller: controller));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Edit'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('task-edit-repeat-field')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Monthly').last);
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Save changes'));
+      await tester.tap(find.text('Save changes'));
+      await tester.pumpAndSettle();
+
+      expect(repo.lastUpdated, isNotNull);
+      expect(repo.lastUpdated!.repeatType, RepeatType.monthly);
+      expect(find.text('Monthly'), findsOneWidget);
     });
 
     testWidgets('validates empty title and does not call updateTask',
@@ -270,7 +313,9 @@ void main() {
 
       expect(find.byKey(const ValueKey('task-edit-due-date-label')), findsOneWidget);
 
-      await tester.tap(find.byKey(const ValueKey('task-edit-select-date-button')));
+      final selectDateButton = find.byKey(const ValueKey('task-edit-select-date-button'));
+      await tester.ensureVisible(selectDateButton);
+      await tester.tap(selectDateButton);
       await tester.pumpAndSettle();
       await tester.tap(find.text('15').last);
       await tester.pumpAndSettle();
@@ -297,7 +342,9 @@ void main() {
       await tester.tap(find.text('Edit'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('task-edit-clear-date-button')));
+      final clearDateButton = find.byKey(const ValueKey('task-edit-clear-date-button'));
+      await tester.ensureVisible(clearDateButton);
+      await tester.tap(clearDateButton);
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Save changes'));
       await tester.tap(find.text('Save changes'));

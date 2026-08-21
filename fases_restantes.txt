@@ -2,32 +2,6 @@ ROADMAP MAESTRO DE NUVORA
 🟢 BLOQUE 1 — Núcleo de Tasks
 Fase 4 — Completar Tasks
 
-4C — Categorías
-
-Definir flujo real de categorías.
-Crear/seleccionar categoría.
-Asociar categoría a Task.
-Mostrar categoría.
-Persistencia.
-Tests.
-
-4D — Recurring Tasks
-
-Utilizar RepeatType existente.
-UI para seleccionar repetición.
-Daily / Weekly / Monthly, según lo que soporte actualmente el dominio.
-Persistir configuración.
-Preparar comportamiento de generación/reprogramación.
-Tests.
-
-4E — Archive + Task Lifecycle
-
-Archivar/desarchivar.
-Separar activas/archivadas.
-Integrarlo con detalle/lista.
-Mantener soft delete.
-Tests.
-
 4F — Tasks QA
 
 Auditar todo Tasks.

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nuvora/core/constants/repeat_type.dart';
 import 'package:nuvora/features/tasks/application/controllers/category_controller.dart';
 import 'package:nuvora/features/tasks/application/controllers/category_provider.dart';
 import 'package:nuvora/features/tasks/application/controllers/task_controller.dart';
@@ -103,6 +104,12 @@ Future<void> _navigateToCreate(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+Future<void> _tapCreateTask(WidgetTester tester) async {
+  final createButton = find.text('Create Task');
+  await tester.ensureVisible(createButton);
+  await tester.tap(createButton);
+}
+
 DateTime _dateOnly(DateTime value) => DateTime(value.year, value.month, value.day);
 
 // ---------------------------------------------------------------------------
@@ -124,7 +131,7 @@ void main() {
       await _navigateToCreate(tester);
 
       // Tap save without entering a title.
-      await tester.tap(find.text('Create Task'));
+      await _tapCreateTask(tester);
       await tester.pumpAndSettle();
 
       expect(find.text('Title is required'), findsOneWidget);
@@ -138,7 +145,7 @@ void main() {
 
       await tester.enterText(
           find.byType(TextFormField).first, 'My new task');
-      await tester.tap(find.text('Create Task'));
+        await _tapCreateTask(tester);
       await tester.pumpAndSettle();
 
       expect(repo.lastCreated?.title, 'My new task');
@@ -150,7 +157,7 @@ void main() {
       await _navigateToCreate(tester);
 
       await tester.enterText(find.byType(TextFormField).first, 'Test');
-      await tester.tap(find.text('Create Task'));
+      await _tapCreateTask(tester);
       await tester.pumpAndSettle();
 
       // Should be back on the parent screen.
@@ -165,7 +172,7 @@ void main() {
       await _navigateToCreate(tester);
 
       await tester.enterText(find.byType(TextFormField).first, 'Bad task');
-      await tester.tap(find.text('Create Task'));
+      await _tapCreateTask(tester);
       await tester.pump();
       await tester.pump();
 
@@ -182,7 +189,7 @@ void main() {
       await _navigateToCreate(tester);
 
       await tester.enterText(find.byType(TextFormField).first, 'Slow task');
-      await tester.tap(find.text('Create Task'));
+      await _tapCreateTask(tester);
       await tester.pump(); // triggers setState(_isSaving = true)
 
       // Button onPressed should be null while saving.
@@ -201,7 +208,7 @@ void main() {
       await _navigateToCreate(tester);
 
       await tester.enterText(find.byType(TextFormField).first, 'Failing');
-      await tester.tap(find.text('Create Task'));
+      await _tapCreateTask(tester);
       await tester.pump();
       await tester.pump(); // finally block fires
 
@@ -238,7 +245,7 @@ void main() {
       await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Create Task'));
+      await _tapCreateTask(tester);
       await tester.pumpAndSettle();
 
       expect(repo.lastCreated, isNotNull);
@@ -271,11 +278,39 @@ void main() {
       expect(find.text('Work'), findsOneWidget);
 
       await tester.enterText(find.byType(TextFormField).first, 'Task with category');
-      await tester.tap(find.text('Create Task'));
+      await _tapCreateTask(tester);
       await tester.pumpAndSettle();
 
       expect(repo.lastCreated, isNotNull);
       expect(repo.lastCreated!.categoryId, 'work');
+    });
+
+    testWidgets('defaults repeat selector to no repeat', (tester) async {
+      final controller = TaskController(repository: _FakeRepo());
+      await tester.pumpWidget(_buildSubject(controller));
+      await _navigateToCreate(tester);
+
+      expect(find.byKey(const ValueKey('create-task-repeat-field')), findsOneWidget);
+      expect(find.text('No repeat'), findsOneWidget);
+    });
+
+    testWidgets('creates task with selected repeat type', (tester) async {
+      final repo = _FakeRepo();
+      final controller = TaskController(repository: repo);
+      await tester.pumpWidget(_buildSubject(controller));
+      await _navigateToCreate(tester);
+
+      await tester.tap(find.byKey(const ValueKey('create-task-repeat-field')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Weekly').last);
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextFormField).first, 'Recurring task');
+      await _tapCreateTask(tester);
+      await tester.pumpAndSettle();
+
+      expect(repo.lastCreated, isNotNull);
+      expect(repo.lastCreated!.repeatType, RepeatType.weekly);
     });
   });
 }

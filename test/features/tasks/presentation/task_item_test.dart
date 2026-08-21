@@ -10,6 +10,7 @@ Task _makeTask({
   String title = 'Test Task',
   String? description,
   bool isCompleted = false,
+  RepeatType repeatType = RepeatType.none,
 }) =>
     Task(
       id: id,
@@ -18,7 +19,7 @@ Task _makeTask({
       createdAt: DateTime(2026, 6, 14),
       isCompleted: isCompleted,
       priority: Priority.medium,
-      repeatType: RepeatType.none,
+      repeatType: repeatType,
     );
 
 Widget _buildSubject(
@@ -133,6 +134,23 @@ void main() {
     testWidgets('delete button is visible', (tester) async {
       await tester.pumpWidget(_buildSubject(_makeTask()));
       expect(find.byIcon(Icons.close), findsOneWidget);
+    });
+
+    testWidgets('does not show repeat badge when repeat is none',
+      (tester) async {
+      await tester.pumpWidget(
+        _buildSubject(_makeTask(repeatType: RepeatType.none)),
+      );
+      expect(find.text('DAILY'), findsNothing);
+      expect(find.text('WEEKLY'), findsNothing);
+      expect(find.text('MONTHLY'), findsNothing);
+    });
+
+    testWidgets('shows repeat badge label when repeat is set', (tester) async {
+      await tester.pumpWidget(
+        _buildSubject(_makeTask(repeatType: RepeatType.weekly)),
+      );
+      expect(find.text('WEEKLY'), findsOneWidget);
     });
   });
 }

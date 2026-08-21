@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nuvora/core/constants/priority.dart';
+import 'package:nuvora/core/constants/repeat_type.dart';
 import 'package:nuvora/core/productivity/productivity_analyzer.dart';
 import 'package:nuvora/core/theme/app_design_system.dart';
 import 'package:nuvora/core/widgets/app_icon_action_button.dart';
@@ -50,6 +51,19 @@ class _TaskItemState extends State<TaskItem> {
 		return ProductivityAnalyzer.getPriorityExplanation(widget.task);
 	}
 
+	String _repeatLabel() {
+		switch (widget.task.repeatType) {
+			case RepeatType.none:
+				return 'NO REPEAT';
+			case RepeatType.daily:
+				return 'DAILY';
+			case RepeatType.weekly:
+				return 'WEEKLY';
+			case RepeatType.monthly:
+				return 'MONTHLY';
+		}
+	}
+
 	String? _formatDueDate() {
 		if (widget.task.dueDate == null) return null;
 		final now = DateTime.now();
@@ -74,8 +88,9 @@ class _TaskItemState extends State<TaskItem> {
 	Widget build(BuildContext context) {
 		final dueDate = _formatDueDate();
 		final showCategory = widget.categoryName != null && widget.categoryName!.trim().isNotEmpty;
+		final showRepeat = widget.task.repeatType != RepeatType.none;
 		final showMeta =
-			widget.task.priority != Priority.medium || dueDate != null || showCategory;
+			widget.task.priority != Priority.medium || dueDate != null || showCategory || showRepeat;
 		final isDue = widget.task.dueDate != null &&
 			widget.task.dueDate!.isBefore(DateTime.now()) &&
 			!widget.task.isCompleted;
@@ -266,6 +281,23 @@ class _TaskItemState extends State<TaskItem> {
 																			widget.categoryName!,
 																			style: AppTypography.labelSmall.copyWith(
 																				color: AppColors.textSecondary,
+																			),
+																		),
+																	),
+																if (showRepeat)
+																	Container(
+																		padding: const EdgeInsets.symmetric(
+																			horizontal: AppSpacing.sm,
+																			vertical: AppSpacing.xs,
+																		),
+																		decoration: BoxDecoration(
+																			color: AppColors.primaryLight,
+																			borderRadius: BorderRadius.circular(AppRadius.full),
+																		),
+																		child: Text(
+																			_repeatLabel(),
+																			style: AppTypography.labelSmall.copyWith(
+																				color: AppColors.primaryDark,
 																			),
 																		),
 																	),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nuvora/core/constants/priority.dart';
+import 'package:nuvora/core/constants/repeat_type.dart';
 import 'package:nuvora/core/theme/app_design_system.dart';
 import 'package:nuvora/core/widgets/app_feedback.dart';
 import 'package:nuvora/features/tasks/application/controllers/category_provider.dart';
@@ -26,6 +27,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 	late final TextEditingController _descriptionController;
 	late Task _task;
 	late Priority _selectedPriority;
+	RepeatType _selectedRepeatType = RepeatType.none;
 	String? _selectedCategoryId;
 	DateTime? _selectedDueDate;
 	bool _isEditing = false;
@@ -38,6 +40,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 		_titleController = TextEditingController(text: _task.title);
 		_descriptionController = TextEditingController(text: _task.description ?? '');
 		_selectedPriority = _task.priority;
+		_selectedRepeatType = _task.repeatType;
 		_selectedCategoryId = _task.categoryId;
 		_selectedDueDate = _task.dueDate;
 	}
@@ -54,6 +57,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 			_titleController.text = _task.title;
 			_descriptionController.text = _task.description ?? '';
 			_selectedPriority = _normalizeEditablePriority(_task.priority);
+			_selectedRepeatType = _task.repeatType;
 			_selectedCategoryId = _task.categoryId;
 			_selectedDueDate = _task.dueDate;
 			_isEditing = true;
@@ -87,6 +91,19 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 				return 'Low';
 			case Priority.urgent:
 				return 'Urgent';
+		}
+	}
+
+	String _repeatLabel(RepeatType repeatType) {
+		switch (repeatType) {
+			case RepeatType.none:
+				return 'No repeat';
+			case RepeatType.daily:
+				return 'Daily';
+			case RepeatType.weekly:
+				return 'Weekly';
+			case RepeatType.monthly:
+				return 'Monthly';
 		}
 	}
 
@@ -351,7 +368,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 			isCompleted: _task.isCompleted,
 			priority: _selectedPriority,
 			categoryId: _selectedCategoryId,
-			repeatType: _task.repeatType,
+			repeatType: _selectedRepeatType,
 			archived: _task.archived,
 			deletedAt: _task.deletedAt,
 		);
@@ -437,6 +454,27 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 							onChanged: (priority) {
 								if (priority == null) return;
 								setState(() => _selectedPriority = priority);
+							},
+						),
+						const SizedBox(height: AppSpacing.lg),
+						Text('Repeat', style: AppTypography.labelLarge),
+						const SizedBox(height: AppSpacing.sm),
+						DropdownButtonFormField<RepeatType>(
+							key: const ValueKey('task-edit-repeat-field'),
+							initialValue: _selectedRepeatType,
+							items: RepeatType.values
+								.map(
+									(repeatType) => DropdownMenuItem<RepeatType>(
+										value: repeatType,
+										child: Text(_repeatLabel(repeatType)),
+									),
+								)
+								.toList(growable: false),
+							onChanged: (value) {
+								if (value == null) return;
+								setState(() {
+									_selectedRepeatType = value;
+								});
 							},
 						),
 						const SizedBox(height: AppSpacing.lg),
@@ -562,6 +600,18 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 								Text(
 									'Priority: ${_priorityLabel(_task.priority)}',
 									style: AppTypography.bodyMedium,
+								),
+								const SizedBox(height: AppSpacing.sm),
+								Text('Repeat', style: AppTypography.labelMedium),
+								const SizedBox(height: AppSpacing.xs),
+								Text(
+									_repeatLabel(_task.repeatType),
+									key: const ValueKey('task-detail-repeat-label'),
+									style: AppTypography.bodyMedium.copyWith(
+										color: _task.repeatType == RepeatType.none
+											? AppColors.textSecondary
+											: AppColors.textPrimary,
+									),
 								),
 								const SizedBox(height: AppSpacing.sm),
 								Text('Category', style: AppTypography.labelMedium),

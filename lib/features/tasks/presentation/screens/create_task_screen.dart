@@ -24,7 +24,21 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 	final _descriptionController = TextEditingController();
 	String? _selectedCategoryId;
 	DateTime? _selectedDueDate;
+	RepeatType _selectedRepeatType = RepeatType.none;
 	bool _isSaving = false;
+
+	String _repeatLabel(RepeatType repeatType) {
+		switch (repeatType) {
+			case RepeatType.none:
+				return 'No repeat';
+			case RepeatType.daily:
+				return 'Daily';
+			case RepeatType.weekly:
+				return 'Weekly';
+			case RepeatType.monthly:
+				return 'Monthly';
+		}
+	}
 
 	String _categoryLabel(List<Category> categories) {
 		if (_selectedCategoryId == null) {
@@ -238,7 +252,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 			isCompleted: false,
 			priority: Priority.medium,
 			categoryId: _selectedCategoryId,
-			repeatType: RepeatType.none,
+			repeatType: _selectedRepeatType,
 		);
 
 		try {
@@ -317,6 +331,32 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 									style: AppTypography.bodyMedium,
 									minLines: 3,
 									maxLines: 5,
+								),
+								const SizedBox(height: AppSpacing.xl),
+								Text(
+									'Repeat',
+									style: AppTypography.labelLarge.copyWith(
+										color: AppColors.textPrimary,
+									),
+								),
+								const SizedBox(height: AppSpacing.md),
+								DropdownButtonFormField<RepeatType>(
+									key: const ValueKey('create-task-repeat-field'),
+									initialValue: _selectedRepeatType,
+									items: RepeatType.values
+										.map(
+											(repeatType) => DropdownMenuItem<RepeatType>(
+												value: repeatType,
+												child: Text(_repeatLabel(repeatType)),
+											),
+										)
+										.toList(growable: false),
+									onChanged: (value) {
+										if (value == null) return;
+										setState(() {
+											_selectedRepeatType = value;
+										});
+									},
 								),
 								const SizedBox(height: AppSpacing.xl),
 								Text(
