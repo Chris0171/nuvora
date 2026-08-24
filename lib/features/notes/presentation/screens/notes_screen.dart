@@ -374,6 +374,7 @@ class _NotesBody extends ConsumerWidget {
 								final note = pinnedNotes[index];
 								return _PinnedNoteCard(
 									note: note,
+									onTap: () => _openEditNote(context, ref, note),
 									onDelete: () => _deleteNote(context, ref, note.id),
 								);
 							},
@@ -397,6 +398,7 @@ class _NotesBody extends ConsumerWidget {
 								child: NoteItem(
 									key: ValueKey(note.id),
 									note: note,
+									onTap: () => _openEditNote(context, ref, note),
 									onDelete: () => _deleteNote(context, ref, note.id),
 								),
 							);
@@ -438,6 +440,15 @@ class _NotesBody extends ConsumerWidget {
 				AppFeedback.showSnackBar(context, 'Could not delete note');
 			}
 		}
+	}
+
+	Future<void> _openEditNote(BuildContext context, WidgetRef ref, Note note) async {
+		await Navigator.of(context).push(
+			AppPageRoute<void>(
+				builder: (_) => CreateNoteScreen(initialNote: note),
+			),
+		);
+		ref.invalidate(notesProvider);
 	}
 }
 
@@ -504,15 +515,22 @@ class _SectionHeader extends StatelessWidget {
 class _PinnedNoteCard extends StatelessWidget {
 	const _PinnedNoteCard({
 		required this.note,
+		required this.onTap,
 		required this.onDelete,
 	});
 
 	final Note note;
+	final VoidCallback onTap;
 	final VoidCallback onDelete;
 
 	@override
 	Widget build(BuildContext context) {
-		return Container(
+		return Material(
+			color: Colors.transparent,
+			child: InkWell(
+				onTap: onTap,
+				borderRadius: BorderRadius.circular(AppRadius.lg),
+				child: Container(
 			padding: const EdgeInsets.all(AppSpacing.md),
 			decoration: BoxDecoration(
 				color: AppColors.surface,
@@ -556,6 +574,8 @@ class _PinnedNoteCard extends StatelessWidget {
 						),
 					),
 				],
+			),
+				),
 			),
 		);
 	}

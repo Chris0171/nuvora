@@ -2,14 +2,6 @@ ROADMAP MAESTRO DE NUVORA
 🟢 BLOQUE 1 — Núcleo de Tasks
 Fase 4 — Completar Tasks
 
-4F — Tasks QA
-
-Auditar todo Tasks.
-Loading/empty/error states.
-Navegación.
-Accesibilidad.
-Tests.
-No introducir nueva arquitectura innecesaria.
 🟢 BLOQUE 2 — Notes
 Fase 5 — Completar Notes
 

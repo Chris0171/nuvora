@@ -5,6 +5,7 @@ import 'package:nuvora/features/notes/application/controllers/note_controller.da
 import 'package:nuvora/features/notes/application/controllers/note_provider.dart';
 import 'package:nuvora/features/notes/domain/entities/note.dart';
 import 'package:nuvora/features/notes/domain/repositories/note_repository.dart';
+import 'package:nuvora/features/notes/presentation/screens/create_note_screen.dart';
 import 'package:nuvora/features/notes/presentation/screens/notes_screen.dart';
 
 class _FakeRepo implements NoteRepository {
@@ -38,7 +39,12 @@ class _FakeRepo implements NoteRepository {
   }
 
   @override
-  Future<void> updateNote(Note note) async {}
+  Future<void> updateNote(Note note) async {
+    final index = notes.indexWhere((item) => item.id == note.id);
+    if (index != -1) {
+      notes[index] = note;
+    }
+  }
 }
 
 Note _note({String id = '1', String title = 'Alpha', String content = 'Body'}) =>
@@ -55,6 +61,15 @@ Widget _app({required NoteController controller, required List<Note> notes}) {
     overrides: [
       noteControllerProvider.overrideWithValue(controller),
       notesProvider.overrideWith((_) async => notes),
+    ],
+    child: const MaterialApp(home: NotesScreen()),
+  );
+}
+
+Widget _appLive({required NoteController controller}) {
+  return ProviderScope(
+    overrides: [
+      noteControllerProvider.overrideWithValue(controller),
     ],
     child: const MaterialApp(home: NotesScreen()),
   );
@@ -116,5 +131,46 @@ void main() {
 
     expect(find.byType(TextField), findsOneWidget);
     expect(find.text('Search notes...'), findsOneWidget);
+  });
+
+  testWidgets('tapping a note opens CreateNoteScreen in edit mode with prefilled fields',
+    (tester) async {
+    final repo = _FakeRepo([_note(id: 'edit-1', title: 'Alpha', content: 'Body')]);
+    final controller = NoteController(repository: repo);
+
+    await tester.pumpWidget(_appLive(controller: controller));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Alpha'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CreateNoteScreen), findsOneWidget);
+    expect(find.text('Edit Note'), findsOneWidget);
+    expect(find.text('Update Note'), findsOneWidget);
+    expect(find.text('Alpha'), findsOneWidget);
+    expect(find.text('Body'), findsOneWidget);
+  });
+
+  testWidgets('editing a note saves and shows updated values in NotesScreen',
+    (tester) async {
+    final original = _note(id: 'edit-2', title: 'Original title', content: 'Original body');
+    final repo = _FakeRepo([original]);
+    final controller = NoteController(repository: repo);
+
+    await tester.pumpWidget(_appLive(controller: controller));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Original title'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).first, 'Updated title');
+    await tester.enterText(find.byType(TextFormField).last, 'Updated body');
+    await tester.tap(find.text('Update Note'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(NotesScreen), findsOneWidget);
+    expect(find.text('Updated title'), findsOneWidget);
+    expect(find.text('Updated body'), findsOneWidget);
+    expect(find.text('Original title'), findsNothing);
   });
 }

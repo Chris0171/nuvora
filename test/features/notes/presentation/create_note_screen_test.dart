@@ -11,12 +11,14 @@ import 'package:nuvora/features/notes/presentation/screens/create_note_screen.da
 
 class _FakeRepo implements NoteRepository {
   bool throwCreate;
+  bool throwUpdate;
   Note? lastCreated;
   Note? lastUpdated;
   Completer<void>? createCompleter;
 
   _FakeRepo({
     this.throwCreate = false,
+    this.throwUpdate = false,
     this.createCompleter,
   });
 
@@ -38,6 +40,7 @@ class _FakeRepo implements NoteRepository {
 
   @override
   Future<void> updateNote(Note note) async {
+    if (throwUpdate) throw Exception('update fail');
     lastUpdated = note;
   }
 }
@@ -120,7 +123,32 @@ void main() {
 
     expect(repo.lastUpdated, isNotNull);
     expect(repo.lastUpdated!.id, 'n1');
+    expect(repo.lastUpdated!.createdAt, initial.createdAt);
+    expect(repo.lastUpdated!.isPinned, initial.isPinned);
+    expect(repo.lastUpdated!.archived, initial.archived);
+    expect(repo.lastUpdated!.deletedAt, initial.deletedAt);
     expect(repo.lastUpdated!.title, 'New title');
+    expect(repo.lastUpdated!.content, 'New body');
+  });
+
+  testWidgets('edit mode preloads existing title and content', (tester) async {
+    final repo = _FakeRepo();
+    final c = NoteController(repository: repo);
+    final initial = Note(
+      id: 'n2',
+      title: 'Existing title',
+      content: 'Existing content',
+      createdAt: DateTime(2026, 6, 15),
+      isPinned: false,
+    );
+
+    await tester.pumpWidget(_app(c, initial: initial));
+    await _open(tester);
+
+    expect(find.text('Edit Note'), findsOneWidget);
+    expect(find.text('Update Note'), findsOneWidget);
+    expect(find.text('Existing title'), findsOneWidget);
+    expect(find.text('Existing content'), findsOneWidget);
   });
 
   testWidgets('shows snackbar on create failure', (tester) async {
@@ -135,6 +163,28 @@ void main() {
     await tester.pump();
 
     expect(find.text('Could not save note'), findsOneWidget);
+  });
+
+  testWidgets('shows snackbar on update failure in edit mode', (tester) async {
+    final initial = Note(
+      id: 'n3',
+      title: 'Existing',
+      content: 'Existing content',
+      createdAt: DateTime(2026, 6, 15),
+      isPinned: false,
+    );
+    final c = NoteController(repository: _FakeRepo(throwUpdate: true));
+    await tester.pumpWidget(_app(c, initial: initial));
+    await _open(tester);
+
+    await tester.enterText(find.byType(TextFormField).first, 'Updated');
+    await tester.enterText(find.byType(TextFormField).last, 'Updated content');
+    await tester.tap(find.text('Update Note'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Could not update note'), findsOneWidget);
+    expect(find.byType(CreateNoteScreen), findsOneWidget);
   });
 
   testWidgets('disables button while save is in progress', (tester) async {

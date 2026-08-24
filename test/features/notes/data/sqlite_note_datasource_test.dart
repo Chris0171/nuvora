@@ -123,6 +123,36 @@ void main() {
         throwsA(isA<NoteNotFoundException>()),
       );
     });
+
+    test('create then update persists title/content and keeps id/createdAt', () async {
+      final createdAt = DateTime(2026, 6, 15, 10, 0, 0);
+      final initial = _note(
+        id: 'persist-update',
+        title: 'Mi nota',
+        content: 'Texto original',
+        createdAt: createdAt,
+        updatedAt: createdAt,
+      );
+      await ds.createNote(initial);
+
+      final updated = initial.copyWith(
+        title: 'Mi nota modificada',
+        content: 'Texto nuevo',
+      );
+      await ds.updateNote(updated);
+
+      final notes = await ds.getNotes();
+      expect(notes, hasLength(1));
+      expect(notes.first.id, 'persist-update');
+      expect(notes.first.title, 'Mi nota modificada');
+      expect(notes.first.content, 'Texto nuevo');
+      expect(notes.first.createdAt, createdAt);
+      expect(
+        notes.first.updatedAt.isAfter(createdAt) ||
+          notes.first.updatedAt.isAtSameMomentAs(createdAt),
+        isTrue,
+      );
+    });
   });
 
   group('soft delete', () {

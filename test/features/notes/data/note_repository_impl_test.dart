@@ -10,11 +10,14 @@ class _FakeNoteDataSource implements NoteDataSource {
   Note? lastUpdated;
   String? lastDeleted;
   String? lastSearch;
+  int createCalls = 0;
+  int updateCalls = 0;
 
   _FakeNoteDataSource({List<Note>? notes}) : notes = notes ?? [];
 
   @override
   Future<void> createNote(Note note) async {
+    createCalls += 1;
     lastCreated = note;
   }
 
@@ -34,6 +37,7 @@ class _FakeNoteDataSource implements NoteDataSource {
 
   @override
   Future<void> updateNote(Note note) async {
+    updateCalls += 1;
     lastUpdated = note;
   }
 }
@@ -116,6 +120,37 @@ void main() {
       repo.updateNote(_note(id: 'x', content: '')),
       throwsA(isA<NoteValidationException>()),
     );
+  });
+
+  test('updateNote preserves id and createdAt', () async {
+    final original = _note(id: 'persist-id');
+
+    await repo.updateNote(original.copyWith(title: 'Updated', content: 'Updated body'));
+
+    expect(ds.lastUpdated, isNotNull);
+    expect(ds.lastUpdated!.id, 'persist-id');
+    expect(ds.lastUpdated!.createdAt, original.createdAt);
+  });
+
+  test('updateNote keeps non-form fields untouched', () async {
+    final original = _note(id: 'flags').copyWith(
+      isPinned: true,
+      archived: true,
+      deletedAt: DateTime(2026, 6, 20),
+    );
+
+    await repo.updateNote(original.copyWith(title: 'Changed', content: 'Changed body'));
+
+    expect(ds.lastUpdated, isNotNull);
+    expect(ds.lastUpdated!.isPinned, isTrue);
+    expect(ds.lastUpdated!.archived, isTrue);
+    expect(ds.lastUpdated!.deletedAt, original.deletedAt);
+  });
+
+  test('updateNote does not create a new note', () async {
+    await repo.updateNote(_note(id: 'no-create', title: 'A', content: 'B'));
+    expect(ds.updateCalls, 1);
+    expect(ds.createCalls, 0);
   });
 
   test('deleteNote delegates id', () async {
