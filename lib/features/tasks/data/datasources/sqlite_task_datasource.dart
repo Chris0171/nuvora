@@ -134,6 +134,28 @@ class SQLiteTaskDataSource extends SqliteDatasourceBase
   }
 
   @override
+  Future<List<Task>> getActiveTasks() async {
+    final database = await db;
+    final rows = await database.query(
+      tableName,
+      where: 'deleted_at IS NULL AND archived = 0',
+      orderBy: 'created_at DESC',
+    );
+    return rows.map(_taskFromMap).toList(growable: false);
+  }
+
+  @override
+  Future<List<Task>> getArchivedTasks() async {
+    final database = await db;
+    final rows = await database.query(
+      tableName,
+      where: 'deleted_at IS NULL AND archived = 1',
+      orderBy: 'created_at DESC',
+    );
+    return rows.map(_taskFromMap).toList(growable: false);
+  }
+
+  @override
   Future<void> createTask(Task task) async {
     final database = await db;
     logger.debug('createTask', task.id);

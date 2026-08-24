@@ -25,6 +25,11 @@ class _FakeRepo implements TaskRepository {
 
   @override
   Future<List<Task>> getTasks() async => const <Task>[];
+  @override
+  Future<List<Task>> getActiveTasks() async => const <Task>[];
+
+  @override
+  Future<List<Task>> getArchivedTasks() async => const <Task>[];
 
   @override
   Future<void> updateTask(Task task) async {
@@ -418,6 +423,66 @@ void main() {
       expect(repo.lastUpdated, isNotNull);
       expect(repo.lastUpdated!.categoryId, isNull);
       expect(find.text('No category'), findsOneWidget);
+    });
+    testWidgets('shows Archive action for active task', (tester) async {
+      final repo = _FakeRepo();
+      final task = _makeTask(repeatType: RepeatType.none);
+      final controller = TaskController(repository: repo);
+
+      await tester.pumpWidget(_buildSubject(task: task, controller: controller));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('task-detail-archive-toggle-button')), findsOneWidget);
+      expect(find.text('Archive'), findsOneWidget);
+      expect(find.text('Unarchive'), findsNothing);
+    });
+
+    testWidgets('shows Unarchive action and archived badge for archived task',
+      (tester) async {
+      final repo = _FakeRepo();
+      final task = _makeTask(repeatType: RepeatType.none).copyWith(archived: true);
+      final controller = TaskController(repository: repo);
+
+      await tester.pumpWidget(_buildSubject(task: task, controller: controller));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Unarchive'), findsOneWidget);
+      expect(find.byKey(const ValueKey('task-detail-archived-status')), findsOneWidget);
+    });
+
+    testWidgets('archive action persists archived true and keeps deletedAt null',
+      (tester) async {
+      final repo = _FakeRepo();
+      final task = _makeTask().copyWith(archived: false, deletedAt: null);
+      final controller = TaskController(repository: repo);
+
+      await tester.pumpWidget(_buildSubject(task: task, controller: controller));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('task-detail-archive-toggle-button')));
+      await tester.pumpAndSettle();
+
+      expect(repo.lastUpdated, isNotNull);
+      expect(repo.lastUpdated!.archived, isTrue);
+      expect(repo.lastUpdated!.deletedAt, isNull);
+    });
+
+    testWidgets('unarchive action persists archived false and preserves deletedAt',
+      (tester) async {
+      final repo = _FakeRepo();
+      final deletedAt = DateTime(2026, 8, 20);
+      final task = _makeTask().copyWith(archived: true, deletedAt: deletedAt);
+      final controller = TaskController(repository: repo);
+
+      await tester.pumpWidget(_buildSubject(task: task, controller: controller));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('task-detail-archive-toggle-button')));
+      await tester.pumpAndSettle();
+
+      expect(repo.lastUpdated, isNotNull);
+      expect(repo.lastUpdated!.archived, isFalse);
+      expect(repo.lastUpdated!.deletedAt, deletedAt);
     });
   });
 }

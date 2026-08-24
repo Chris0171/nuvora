@@ -17,6 +17,16 @@ class TaskRepositoryImpl implements TaskRepository {
 	}
 
 	@override
+	Future<List<Task>> getActiveTasks() async {
+		return dataSource.getActiveTasks();
+	}
+
+	@override
+	Future<List<Task>> getArchivedTasks() async {
+		return dataSource.getArchivedTasks();
+	}
+
+	@override
 	Future<void> createTask(Task task) async {
 		final DateTime now = DateTime.now();
 		final bool replaceId = _shouldReplaceId(task.id);

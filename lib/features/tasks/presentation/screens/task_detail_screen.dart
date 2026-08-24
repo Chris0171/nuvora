@@ -335,6 +335,8 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 				isCompleted: value,
 			);
 			ref.invalidate(tasksProvider);
+			ref.invalidate(activeTasksProvider);
+			ref.invalidate(archivedTasksProvider);
 			if (!mounted) return;
 			setState(() {
 				_task = _task.copyWith(
@@ -345,6 +347,38 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 		} catch (_) {
 			if (mounted) {
 				AppFeedback.showSnackBar(context, 'Could not update task');
+			}
+		}
+	}
+
+	Future<void> _toggleArchived() async {
+		final bool willArchive = !_task.archived;
+		try {
+			if (!willArchive) {
+				await ref.read(taskControllerProvider).unarchiveTask(_task);
+			} else {
+				await ref.read(taskControllerProvider).archiveTask(_task);
+			}
+			ref.invalidate(tasksProvider);
+			ref.invalidate(activeTasksProvider);
+			ref.invalidate(archivedTasksProvider);
+			if (!mounted) return;
+			setState(() {
+				_task = _task.copyWith(
+					archived: !_task.archived,
+					updatedAt: DateTime.now(),
+				);
+			});
+			AppFeedback.showSnackBar(
+				context,
+				willArchive ? 'Task archived' : 'Task unarchived',
+			);
+		} catch (_) {
+			if (mounted) {
+				AppFeedback.showSnackBar(
+					context,
+					willArchive ? 'Could not archive task' : 'Could not unarchive task',
+				);
 			}
 		}
 	}
@@ -376,9 +410,12 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 		try {
 			await ref.read(taskControllerProvider).updateTask(updatedTask);
 			ref.invalidate(tasksProvider);
+			ref.invalidate(activeTasksProvider);
+			ref.invalidate(archivedTasksProvider);
 			if (!mounted) return;
+			final now = DateTime.now();
 			setState(() {
-				_task = updatedTask;
+				_task = updatedTask.copyWith(updatedAt: now);
 				_isEditing = false;
 			});
 			AppFeedback.showSnackBar(context, 'Task updated');
@@ -578,6 +615,27 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 			: Column(
 				crossAxisAlignment: CrossAxisAlignment.start,
 				children: [
+					if (_task.archived) ...[
+						Container(
+							padding: const EdgeInsets.symmetric(
+								horizontal: AppSpacing.md,
+								vertical: AppSpacing.sm,
+							),
+							decoration: BoxDecoration(
+								color: AppColors.surfaceSecondary,
+								borderRadius: BorderRadius.circular(AppRadius.full),
+								border: Border.all(color: AppColors.border),
+							),
+							child: Text(
+								'Archived task',
+								key: const ValueKey('task-detail-archived-status'),
+								style: AppTypography.labelMedium.copyWith(
+									color: AppColors.textSecondary,
+								),
+							),
+						),
+						const SizedBox(height: AppSpacing.md),
+					],
 					Text(_task.title, style: AppTypography.displaySmall),
 					const SizedBox(height: AppSpacing.sm),
 					Text(
@@ -683,6 +741,13 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 			appBar: AppBar(
 				title: Text(_isEditing ? 'Edit Task' : 'Task Detail'),
 				actions: [
+					if (!_isEditing)
+						TextButton.icon(
+							key: const ValueKey('task-detail-archive-toggle-button'),
+							onPressed: _toggleArchived,
+							icon: Icon(_task.archived ? Icons.unarchive_outlined : Icons.archive_outlined),
+							label: Text(_task.archived ? 'Unarchive' : 'Archive'),
+						),
 					if (!_isEditing)
 						TextButton.icon(
 							onPressed: _startEditing,

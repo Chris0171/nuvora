@@ -10,12 +10,38 @@ class TaskController {
 		return repository.getTasks();
 	}
 
+	Future<List<Task>> loadActiveTasks() async {
+		return repository.getActiveTasks();
+	}
+
+	Future<List<Task>> loadArchivedTasks() async {
+		return repository.getArchivedTasks();
+	}
+
 	Future<void> createTask(Task task) async {
 		await repository.createTask(task);
 	}
 
 	Future<void> updateTask(Task task) async {
 		await repository.updateTask(task);
+	}
+
+	Future<void> archiveTask(Task task) async {
+		await repository.updateTask(
+			task.copyWith(
+				archived: true,
+				deletedAt: task.deletedAt,
+			),
+		);
+	}
+
+	Future<void> unarchiveTask(Task task) async {
+		await repository.updateTask(
+			task.copyWith(
+				archived: false,
+				deletedAt: task.deletedAt,
+			),
+		);
 	}
 
 	Future<void> deleteTask(String taskId) async {

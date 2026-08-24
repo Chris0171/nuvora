@@ -21,3 +21,11 @@ final taskControllerProvider = Provider<TaskController>((ref) {
 final tasksProvider = FutureProvider<List<Task>>((ref) async {
 	return ref.read(taskControllerProvider).loadTasks();
 });
+
+final activeTasksProvider = FutureProvider<List<Task>>((ref) async {
+	return ref.read(taskControllerProvider).loadActiveTasks();
+});
+
+final archivedTasksProvider = FutureProvider<List<Task>>((ref) async {
+	return ref.read(taskControllerProvider).loadArchivedTasks();
+});

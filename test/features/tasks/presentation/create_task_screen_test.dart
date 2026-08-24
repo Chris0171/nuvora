@@ -35,6 +35,12 @@ class _FakeRepo implements TaskRepository {
   Future<List<Task>> getTasks() async => [];
 
   @override
+  Future<List<Task>> getActiveTasks() async => [];
+
+  @override
+  Future<List<Task>> getArchivedTasks() async => [];
+
+  @override
   Future<void> updateTask(Task task) async {}
 
   @override

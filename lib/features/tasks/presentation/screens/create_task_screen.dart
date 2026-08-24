@@ -258,6 +258,8 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 		try {
 			await ref.read(taskControllerProvider).createTask(newTask);
 			ref.invalidate(tasksProvider);
+			ref.invalidate(activeTasksProvider);
+			ref.invalidate(archivedTasksProvider);
 			if (mounted) {
 				Navigator.of(context).pop(true);
 			}

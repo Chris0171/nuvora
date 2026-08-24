@@ -75,6 +75,16 @@ void main() {
       expect(tasks, hasLength(3));
     });
 
+    test('archived task is persisted and returned by getTasks', () async {
+      await ds.createTask(_makeTask(id: 'archived-1', archived: true));
+
+      final tasks = await ds.getTasks();
+
+      expect(tasks, hasLength(1));
+      expect(tasks.first.archived, isTrue);
+      expect(tasks.first.deletedAt, isNull);
+    });
+
     test('all fields survive round-trip', () async {
       final now = DateTime.now();
       final due = now.add(const Duration(days: 1));
@@ -264,6 +274,92 @@ void main() {
 
       final result = (await ds.getTasks()).first;
       expect(result.categoryId, isNull);
+    });
+
+    test('can archive task without changing deletedAt', () async {
+      final task = _makeTask(id: 'archive-update').copyWith(deletedAt: null);
+      await ds.createTask(task);
+
+      await ds.updateTask(task.copyWith(archived: true));
+
+      final result = (await ds.getTasks()).first;
+      expect(result.archived, isTrue);
+      expect(result.deletedAt, isNull);
+    });
+
+    test('unarchive updates archived flag and keeps deletedAt null', () async {
+      final task = _makeTask(id: 'unarchive-update').copyWith(
+        archived: true,
+        deletedAt: null,
+      );
+      await ds.createTask(task);
+
+      await ds.updateTask(task.copyWith(archived: false, deletedAt: null));
+
+      final result = (await ds.getTasks()).first;
+      expect(result.archived, isFalse);
+      expect(result.deletedAt, isNull);
+    });
+  });
+
+  group('active and archived queries', () {
+    test('getActiveTasks returns only non-archived and non-deleted tasks', () async {
+      await ds.createTask(_makeTask(id: 'active-1', archived: false));
+      await ds.createTask(_makeTask(id: 'archived-1', archived: true));
+      await ds.createTask(_makeTask(id: 'deleted-active', archived: false));
+      await ds.deleteTask('deleted-active');
+
+      final active = await ds.getActiveTasks();
+
+      expect(active, hasLength(1));
+      expect(active.first.id, 'active-1');
+    });
+
+    test('getArchivedTasks returns only archived and non-deleted tasks', () async {
+      await ds.createTask(_makeTask(id: 'active-1', archived: false));
+      await ds.createTask(_makeTask(id: 'archived-1', archived: true));
+      await ds.createTask(_makeTask(id: 'deleted-archived', archived: true));
+      await ds.deleteTask('deleted-archived');
+
+      final archived = await ds.getArchivedTasks();
+
+      expect(archived, hasLength(1));
+      expect(archived.first.id, 'archived-1');
+    });
+
+    test('soft-deleted task does not reappear in active or archived after unarchive update attempt', () async {
+      final task = _makeTask(id: 'deleted-then-unarchive', archived: true);
+      await ds.createTask(task);
+      await ds.deleteTask(task.id);
+
+      await expectLater(
+        ds.updateTask(task.copyWith(archived: false)),
+        throwsA(isA<TaskNotFoundException>()),
+      );
+
+      final active = await ds.getActiveTasks();
+      final archived = await ds.getArchivedTasks();
+      expect(active, isEmpty);
+      expect(archived, isEmpty);
+    });
+
+    test('persists archived state after closing and reopening datasource', () async {
+      final sharedPath = 'file:archive_reopen_test?mode=memory&cache=shared';
+      final first = SQLiteTaskDataSource(
+        databaseFactory: databaseFactoryFfi,
+        databasePath: sharedPath,
+      );
+      await first.createTask(_makeTask(id: 'persist-archived', archived: true));
+
+      final second = SQLiteTaskDataSource(
+        databaseFactory: databaseFactoryFfi,
+        databasePath: sharedPath,
+      );
+      final archived = await second.getArchivedTasks();
+
+      expect(archived, hasLength(1));
+      expect(archived.first.id, 'persist-archived');
+      expect(archived.first.archived, isTrue);
     });
   });
 

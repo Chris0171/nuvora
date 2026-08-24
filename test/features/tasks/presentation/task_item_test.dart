@@ -26,6 +26,7 @@ Widget _buildSubject(
   Task task, {
   VoidCallback? onTap,
   VoidCallback? onDelete,
+  ValueChanged<bool>? onToggleArchived,
   ValueChanged<bool>? onToggleCompleted,
 }) =>
     MaterialApp(
@@ -34,6 +35,7 @@ Widget _buildSubject(
           task: task,
           onTap: onTap,
           onDelete: onDelete,
+          onToggleArchived: onToggleArchived,
           onToggleCompleted: onToggleCompleted,
         ),
       ),
@@ -151,6 +153,32 @@ void main() {
         _buildSubject(_makeTask(repeatType: RepeatType.weekly)),
       );
       expect(find.text('WEEKLY'), findsOneWidget);
+    });
+
+    testWidgets('calls onToggleArchived(true) when tapping archive icon',
+      (tester) async {
+      bool? received;
+      await tester.pumpWidget(
+        _buildSubject(
+          _makeTask(),
+          onToggleArchived: (value) => received = value,
+        ),
+      );
+
+      await tester.tap(find.byIcon(Icons.archive_outlined));
+      await tester.pump();
+
+      expect(received, isTrue);
+    });
+
+    testWidgets('shows archive action semantics/tooltip labels', (tester) async {
+      await tester.pumpWidget(_buildSubject(_makeTask()));
+      expect(find.byTooltip('Archive task Test Task'), findsOneWidget);
+
+      await tester.pumpWidget(
+        _buildSubject(_makeTask().copyWith(archived: true)),
+      );
+      expect(find.byTooltip('Unarchive task Test Task'), findsOneWidget);
     });
   });
 }

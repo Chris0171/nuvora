@@ -16,11 +16,18 @@ import 'package:nuvora/features/tasks/presentation/screens/create_task_screen.da
 import 'package:nuvora/features/tasks/presentation/screens/task_detail_screen.dart';
 import 'package:nuvora/features/tasks/presentation/widgets/task_item.dart';
 
-class TaskListScreen extends ConsumerWidget {
+class TaskListScreen extends ConsumerStatefulWidget {
 	const TaskListScreen({super.key});
 
 	@override
-	Widget build(BuildContext context, WidgetRef ref) {
+	ConsumerState<TaskListScreen> createState() => _TaskListScreenState();
+}
+
+class _TaskListScreenState extends ConsumerState<TaskListScreen> {
+	bool _showArchived = false;
+
+	@override
+	Widget build(BuildContext context) {
 		final horizontalPadding = AppResponsive.pagePadding(context);
 		final motionDuration = AppMotion.resolvedDuration(context, AppMotion.duration);
 		final motionCurve = AppMotion.resolvedCurve(context, AppMotion.curve);
@@ -31,27 +38,57 @@ class TaskListScreen extends ConsumerWidget {
 		final Map<String, String> categoryById = <String, String>{
 			for (final category in categories) category.id: category.name,
 		};
-		final tasksAsync = ref.watch(tasksProvider);
+		final tasksAsync = _showArchived
+			? ref.watch(archivedTasksProvider)
+			: ref.watch(activeTasksProvider);
 		final stateChild = tasksAsync.when(
 			data: (tasks) {
 				if (tasks.isEmpty) {
 					return AppEmptyState(
-						key: const ValueKey('tasks-empty'),
-						icon: Icons.check_circle_outline,
-						title: 'Start planning your day',
-						detail: 'No tasks yet',
-						description: 'Create your first task to get started',
-						button: ElevatedButton.icon(
-							onPressed: () {
-								Navigator.of(context).push(
-									AppPageRoute<void>(
-										builder: (_) => const CreateTaskScreen(),
-									),
-								);
-							},
-							icon: const Icon(Icons.add),
-							label: const Text('Create your first task'),
+						key: ValueKey(_showArchived ? 'tasks-archived-empty' : 'tasks-active-empty'),
+						icon: _showArchived ? Icons.archive_outlined : Icons.check_circle_outline,
+						title: _showArchived ? 'No archived tasks' : 'Start planning your day',
+						detail: _showArchived ? 'Archive tasks to see them here' : 'No tasks yet',
+						description: _showArchived
+							? 'Archived tasks remain available for reference'
+							: 'Create your first task to get started',
+						button: _showArchived
+							? null
+							: ElevatedButton.icon(
+								onPressed: () {
+									Navigator.of(context).push(
+										AppPageRoute<void>(
+											builder: (_) => const CreateTaskScreen(),
+										),
+									);
+								},
+								icon: const Icon(Icons.add),
+								label: const Text('Create your first task'),
+							),
+					);
+				}
+
+				if (_showArchived) {
+					return ListView(
+						key: ValueKey('tasks-archived-data-${tasks.length}'),
+						shrinkWrap: true,
+						physics: const NeverScrollableScrollPhysics(),
+						padding: EdgeInsets.symmetric(
+							horizontal: horizontalPadding,
+							vertical: AppSpacing.md,
 						),
+						children: [
+							_TaskPrioritySection(
+								title: 'Archived',
+								tasks: tasks,
+								emptyText: 'No archived tasks',
+								childBuilder: (task) => _taskTile(
+									context,
+									task,
+									categoryById,
+								),
+							),
+						],
 					);
 				}
 
@@ -73,7 +110,7 @@ class TaskListScreen extends ConsumerWidget {
 					.toList();
 
 				return ListView(
-					key: ValueKey('tasks-data-${tasks.length}'),
+					key: ValueKey('tasks-active-data-${tasks.length}'),
 					shrinkWrap: true,
 					physics: const NeverScrollableScrollPhysics(),
 					padding: EdgeInsets.symmetric(
@@ -136,7 +173,6 @@ class TaskListScreen extends ConsumerWidget {
 							emptyText: 'No urgent tasks right now',
 							childBuilder: (task) => _taskTile(
 								context,
-								ref,
 								task,
 								categoryById,
 							),
@@ -147,7 +183,6 @@ class TaskListScreen extends ConsumerWidget {
 							emptyText: 'No upcoming tasks available',
 							childBuilder: (task) => _taskTile(
 								context,
-								ref,
 								task,
 								categoryById,
 							),
@@ -158,7 +193,6 @@ class TaskListScreen extends ConsumerWidget {
 							emptyText: 'No completed tasks yet',
 							childBuilder: (task) => _taskTile(
 								context,
-								ref,
 								task,
 								categoryById,
 							),
@@ -168,11 +202,11 @@ class TaskListScreen extends ConsumerWidget {
 				);
 			},
 			loading: () => AppLoadingState(
-				key: const ValueKey('tasks-loading'),
-				label: 'Loading tasks...',
+				key: ValueKey(_showArchived ? 'tasks-archived-loading' : 'tasks-active-loading'),
+				label: _showArchived ? 'Loading archived tasks...' : 'Loading tasks...',
 			),
 			error: (error, _) => Center(
-				key: const ValueKey('tasks-error'),
+				key: ValueKey(_showArchived ? 'tasks-archived-error' : 'tasks-active-error'),
 				child: Padding(
 					padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
 					child: Column(
@@ -185,7 +219,7 @@ class TaskListScreen extends ConsumerWidget {
 							),
 							const SizedBox(height: AppSpacing.lg),
 							Text(
-								'Error loading tasks',
+								_showArchived ? 'Error loading archived tasks' : 'Error loading tasks',
 								style: AppTypography.headlineMedium,
 								textAlign: TextAlign.center,
 							),
@@ -198,6 +232,37 @@ class TaskListScreen extends ConsumerWidget {
 						],
 					),
 				),
+			),
+		);
+
+		final lifecycleTabs = Padding(
+			padding: EdgeInsets.fromLTRB(horizontalPadding, AppSpacing.md, horizontalPadding, 0),
+			child: Row(
+				children: [
+					Expanded(
+						child: ChoiceChip(
+							key: const ValueKey('tasks-filter-active'),
+							label: const Text('Active Tasks'),
+							selected: !_showArchived,
+							onSelected: (selected) {
+								if (!selected) return;
+								setState(() => _showArchived = false);
+							},
+						),
+					),
+					const SizedBox(width: AppSpacing.sm),
+					Expanded(
+						child: ChoiceChip(
+							key: const ValueKey('tasks-filter-archived'),
+							label: const Text('Archived'),
+							selected: _showArchived,
+							onSelected: (selected) {
+								if (!selected) return;
+								setState(() => _showArchived = true);
+							},
+						),
+					),
+				],
 			),
 		);
 
@@ -217,13 +282,34 @@ class TaskListScreen extends ConsumerWidget {
 					),
 				);
 			},
-			child: stateChild,
+			child: LayoutBuilder(
+				key: ValueKey(_showArchived ? 'tasks-archived-view' : 'tasks-active-view'),
+				builder: (context, constraints) {
+					if (constraints.maxHeight.isFinite) {
+						return Column(
+							crossAxisAlignment: CrossAxisAlignment.stretch,
+							children: [
+								lifecycleTabs,
+								Expanded(child: stateChild),
+							],
+						);
+					}
+
+					return Column(
+						mainAxisSize: MainAxisSize.min,
+						crossAxisAlignment: CrossAxisAlignment.stretch,
+						children: [
+							lifecycleTabs,
+							stateChild,
+						],
+					);
+				},
+			),
 		);
 	}
 
 	Widget _taskTile(
 		BuildContext context,
-		WidgetRef ref,
 		Task task,
 		Map<String, String> categoryById,
 	) {
@@ -250,6 +336,8 @@ class TaskListScreen extends ConsumerWidget {
 							isCompleted: value,
 						);
 						ref.invalidate(tasksProvider);
+						ref.invalidate(activeTasksProvider);
+						ref.invalidate(archivedTasksProvider);
 					} catch (_) {
 						if (context.mounted) {
 							AppFeedback.showSnackBar(context, 'Could not update task');
@@ -261,9 +349,33 @@ class TaskListScreen extends ConsumerWidget {
 						HapticFeedback.mediumImpact();
 						await ref.read(taskControllerProvider).deleteTask(task.id);
 						ref.invalidate(tasksProvider);
+						ref.invalidate(activeTasksProvider);
+						ref.invalidate(archivedTasksProvider);
 					} catch (_) {
 						if (context.mounted) {
 							AppFeedback.showSnackBar(context, 'Could not delete task');
+						}
+					}
+				},
+				onToggleArchived: (willBeArchived) async {
+					try {
+						HapticFeedback.selectionClick();
+						if (willBeArchived) {
+							await ref.read(taskControllerProvider).archiveTask(task);
+						} else {
+							await ref.read(taskControllerProvider).unarchiveTask(task);
+						}
+						ref.invalidate(tasksProvider);
+						ref.invalidate(activeTasksProvider);
+						ref.invalidate(archivedTasksProvider);
+					} catch (_) {
+						if (context.mounted) {
+							AppFeedback.showSnackBar(
+								context,
+								willBeArchived
+									? 'Could not archive task'
+									: 'Could not unarchive task',
+							);
 						}
 					}
 				},

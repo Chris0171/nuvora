@@ -2,6 +2,8 @@ import 'package:nuvora/features/tasks/domain/entities/task.dart';
 
 abstract class TaskRepository {
 	Future<List<Task>> getTasks();
+	Future<List<Task>> getActiveTasks();
+	Future<List<Task>> getArchivedTasks();
 	Future<void> createTask(Task task);
 	Future<void> updateTask(Task task);
 	Future<void> updateTaskCompletion({

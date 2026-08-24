@@ -14,6 +14,7 @@ class TaskItem extends StatefulWidget {
 		this.categoryName,
 		this.onTap,
 		this.onDelete,
+		this.onToggleArchived,
 		this.onToggleCompleted,
 	});
 
@@ -21,6 +22,7 @@ class TaskItem extends StatefulWidget {
 	final String? categoryName;
 	final VoidCallback? onTap;
 	final VoidCallback? onDelete;
+	final ValueChanged<bool>? onToggleArchived;
 	final ValueChanged<bool>? onToggleCompleted;
 
 	@override
@@ -97,6 +99,9 @@ class _TaskItemState extends State<TaskItem> {
 		final completionLabel = widget.task.isCompleted
 			? 'Mark ${widget.task.title} as incomplete'
 			: 'Mark ${widget.task.title} as completed';
+		final archiveLabel = widget.task.archived
+			? 'Unarchive task ${widget.task.title}'
+			: 'Archive task ${widget.task.title}';
 		final motionDuration = AppMotion.resolvedDuration(context, AppMotion.duration);
 		final shortMotionDuration = AppMotion.resolvedDuration(context, AppMotion.shortDuration);
 		final motionCurve = AppMotion.resolvedCurve(context, AppMotion.curve);
@@ -334,10 +339,25 @@ class _TaskItemState extends State<TaskItem> {
 											),
 											Padding(
 												padding: const EdgeInsets.only(left: AppSpacing.md),
-												child: AppIconActionButton(
-													icon: Icons.close,
-													label: 'Delete task ${widget.task.title}',
-													onPressed: widget.onDelete,
+												child: Column(
+													mainAxisSize: MainAxisSize.min,
+													children: [
+														AppIconActionButton(
+															icon: widget.task.archived
+																? Icons.unarchive_outlined
+																: Icons.archive_outlined,
+															label: archiveLabel,
+															onPressed: widget.onToggleArchived == null
+																? null
+																: () => widget.onToggleArchived!(!widget.task.archived),
+														),
+														const SizedBox(height: AppSpacing.xs),
+														AppIconActionButton(
+															icon: Icons.close,
+															label: 'Delete task ${widget.task.title}',
+															onPressed: widget.onDelete,
+														),
+													],
 												),
 											),
 										],

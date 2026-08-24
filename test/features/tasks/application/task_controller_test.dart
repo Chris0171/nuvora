@@ -10,6 +10,7 @@ import 'package:nuvora/features/tasks/domain/repositories/task_repository.dart';
 // ---------------------------------------------------------------------------
 class _FakeTaskRepository implements TaskRepository {
   final List<Task> storedTasks = [];
+  Task? lastUpdated;
   String? lastDeletedId;
   ({String taskId, bool isCompleted})? lastCompletionUpdate;
   Exception? throwOnCreate;
@@ -20,6 +21,16 @@ class _FakeTaskRepository implements TaskRepository {
   Future<List<Task>> getTasks() async => List.unmodifiable(storedTasks);
 
   @override
+  Future<List<Task>> getActiveTasks() async {
+    return storedTasks.where((task) => !task.archived).toList(growable: false);
+  }
+
+  @override
+  Future<List<Task>> getArchivedTasks() async {
+    return storedTasks.where((task) => task.archived).toList(growable: false);
+  }
+
+  @override
   Future<void> createTask(Task task) async {
     if (throwOnCreate != null) throw throwOnCreate!;
     storedTasks.add(task);
@@ -28,6 +39,7 @@ class _FakeTaskRepository implements TaskRepository {
   @override
   Future<void> updateTask(Task task) async {
     if (throwOnUpdate != null) throw throwOnUpdate!;
+    lastUpdated = task;
     final index = storedTasks.indexWhere((t) => t.id == task.id);
     if (index != -1) storedTasks[index] = task;
   }
@@ -88,6 +100,30 @@ void main() {
       final result = await controller.loadTasks();
       expect(result, isEmpty);
     });
+
+    test('loadActiveTasks returns only non-archived tasks', () async {
+      fakeRepo.storedTasks.addAll([
+        _makeTask(id: 'active-1'),
+        _makeTask(id: 'arch-1').copyWith(archived: true),
+      ]);
+
+      final result = await controller.loadActiveTasks();
+
+      expect(result, hasLength(1));
+      expect(result.first.id, 'active-1');
+    });
+
+    test('loadArchivedTasks returns only archived tasks', () async {
+      fakeRepo.storedTasks.addAll([
+        _makeTask(id: 'active-1'),
+        _makeTask(id: 'arch-1').copyWith(archived: true),
+      ]);
+
+      final result = await controller.loadArchivedTasks();
+
+      expect(result, hasLength(1));
+      expect(result.first.id, 'arch-1');
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -125,6 +161,30 @@ void main() {
         controller.updateTask(_makeTask()),
         throwsA(isA<Exception>()),
       );
+    });
+
+    test('archiveTask sets archived true and preserves deletedAt', () async {
+      final base = _makeTask(id: 'arch-me').copyWith(deletedAt: null);
+
+      await controller.archiveTask(base);
+
+      expect(fakeRepo.lastUpdated, isNotNull);
+      expect(fakeRepo.lastUpdated!.archived, isTrue);
+      expect(fakeRepo.lastUpdated!.deletedAt, isNull);
+    });
+
+    test('unarchiveTask sets archived false and preserves deletedAt', () async {
+      final deletedAt = DateTime(2026, 8, 20);
+      final base = _makeTask(id: 'unarch-me').copyWith(
+        archived: true,
+        deletedAt: deletedAt,
+      );
+
+      await controller.unarchiveTask(base);
+
+      expect(fakeRepo.lastUpdated, isNotNull);
+      expect(fakeRepo.lastUpdated!.archived, isFalse);
+      expect(fakeRepo.lastUpdated!.deletedAt, deletedAt);
     });
   });
 

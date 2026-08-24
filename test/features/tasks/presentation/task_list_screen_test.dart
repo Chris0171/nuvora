@@ -25,23 +25,39 @@ class _FakeRepo implements TaskRepository {
   final List<Task> tasks;
   bool deleteShouldThrow;
   bool completionShouldThrow;
+  bool updateShouldThrow;
   String? lastDeletedId;
+  Task? lastUpdated;
   ({String taskId, bool isCompleted})? lastCompletion;
 
   _FakeRepo({
     List<Task>? tasks,
     this.deleteShouldThrow = false,
     this.completionShouldThrow = false,
+    this.updateShouldThrow = false,
   }) : tasks = tasks ?? [];
 
   @override
   Future<List<Task>> getTasks() async => List.unmodifiable(tasks);
 
   @override
+  Future<List<Task>> getActiveTasks() async {
+    return tasks.where((task) => !task.archived).toList(growable: false);
+  }
+
+  @override
+  Future<List<Task>> getArchivedTasks() async {
+    return tasks.where((task) => task.archived).toList(growable: false);
+  }
+
+  @override
   Future<void> createTask(Task task) async {}
 
   @override
-  Future<void> updateTask(Task task) async {}
+  Future<void> updateTask(Task task) async {
+    if (updateShouldThrow) throw TaskNotFoundException(task.id);
+    lastUpdated = task;
+  }
 
   @override
   Future<void> updateTaskCompletion({
@@ -91,6 +107,16 @@ Widget _buildSubject({
     ProviderScope(
       overrides: [
         tasksProvider.overrideWith((_) => Future.value(tasks)),
+        activeTasksProvider.overrideWith(
+          (_) => Future.value(
+            tasks.where((task) => !task.archived).toList(growable: false),
+          ),
+        ),
+        archivedTasksProvider.overrideWith(
+          (_) => Future.value(
+            tasks.where((task) => task.archived).toList(growable: false),
+          ),
+        ),
         taskControllerProvider.overrideWithValue(controller),
         categoryControllerProvider.overrideWithValue(
           CategoryController(repository: categoryRepo ?? _FakeCategoryRepo()),
@@ -108,6 +134,8 @@ Widget _buildSubject({
 Widget _buildError(Object err) => ProviderScope(
       overrides: [
         tasksProvider.overrideWith((_) => Future.error(err)),
+        activeTasksProvider.overrideWith((_) => Future.error(err)),
+        archivedTasksProvider.overrideWith((_) => Future.error(err)),
         taskControllerProvider.overrideWithValue(
           TaskController(repository: _FakeRepo()),
         ),
@@ -124,6 +152,8 @@ Widget _buildError(Object err) => ProviderScope(
 Widget _buildLoading() => ProviderScope(
       overrides: [
         tasksProvider.overrideWith((_) => Completer<List<Task>>().future),
+        activeTasksProvider.overrideWith((_) => Completer<List<Task>>().future),
+        archivedTasksProvider.overrideWith((_) => Completer<List<Task>>().future),
         taskControllerProvider.overrideWithValue(
           TaskController(repository: _FakeRepo()),
         ),
@@ -153,6 +183,39 @@ void main() {
       await tester.pumpWidget(_buildSubject(tasks: [], controller: controller));
       await tester.pumpAndSettle();
       expect(find.text('No tasks yet'), findsOneWidget);
+    });
+
+    testWidgets('can switch to archived tab and see archived tasks only',
+      (tester) async {
+      final tasks = [
+        _makeTask(id: 'active-1', title: 'Active task'),
+        _makeTask(id: 'archived-1', title: 'Archived task').copyWith(archived: true),
+      ];
+      final controller = TaskController(repository: _FakeRepo(tasks: tasks));
+      await tester.pumpWidget(_buildSubject(tasks: tasks, controller: controller));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Active task'), findsOneWidget);
+      expect(find.text('Archived task'), findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('tasks-filter-archived')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Archived task'), findsOneWidget);
+      expect(find.text('Active task'), findsNothing);
+    });
+
+    testWidgets('archived empty state is shown in archived tab', (tester) async {
+      final tasks = [_makeTask(id: 'active-1', title: 'Active task')];
+      final controller = TaskController(repository: _FakeRepo(tasks: tasks));
+      await tester.pumpWidget(_buildSubject(tasks: tasks, controller: controller));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('tasks-filter-archived')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No archived tasks'), findsOneWidget);
+      expect(find.text('Archive tasks to see them here'), findsOneWidget);
     });
 
     testWidgets('renders one TaskItem per task', (tester) async {
@@ -203,6 +266,52 @@ void main() {
       await tester.pump();
 
       expect(repo.lastDeletedId, 'del-target');
+    });
+
+    testWidgets('archives active task from list action', (tester) async {
+      final task = _makeTask(id: 'arch-target');
+      final repo = _FakeRepo(tasks: [task]);
+      final controller = TaskController(repository: repo);
+      await tester.pumpWidget(_buildSubject(tasks: [task], controller: controller));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.archive_outlined));
+      await tester.pump();
+
+      expect(repo.lastUpdated, isNotNull);
+      expect(repo.lastUpdated!.archived, isTrue);
+      expect(repo.lastUpdated!.deletedAt, isNull);
+    });
+
+    testWidgets('unarchives task from archived tab action', (tester) async {
+      final task = _makeTask(id: 'unarch-target').copyWith(archived: true);
+      final repo = _FakeRepo(tasks: [task]);
+      final controller = TaskController(repository: repo);
+      await tester.pumpWidget(_buildSubject(tasks: [task], controller: controller));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('tasks-filter-archived')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.unarchive_outlined));
+      await tester.pump();
+
+      expect(repo.lastUpdated, isNotNull);
+      expect(repo.lastUpdated!.archived, isFalse);
+    });
+
+    testWidgets('shows SnackBar when archive update fails', (tester) async {
+      final task = _makeTask(id: 'archive-fail');
+      final repo = _FakeRepo(tasks: [task], updateShouldThrow: true);
+      final controller = TaskController(repository: repo);
+      await tester.pumpWidget(_buildSubject(tasks: [task], controller: controller));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.archive_outlined));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Could not archive task'), findsOneWidget);
     });
 
     testWidgets('calls updateTaskCompletion on controller when checkbox toggled',

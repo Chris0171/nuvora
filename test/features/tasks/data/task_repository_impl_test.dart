@@ -18,6 +18,16 @@ class _FakeTaskDataSource implements TaskDataSource {
   Future<List<Task>> getTasks() async => List.unmodifiable(stored);
 
   @override
+  Future<List<Task>> getActiveTasks() async {
+    return stored.where((task) => !task.archived).toList(growable: false);
+  }
+
+  @override
+  Future<List<Task>> getArchivedTasks() async {
+    return stored.where((task) => task.archived).toList(growable: false);
+  }
+
+  @override
   Future<void> createTask(Task task) async => stored.add(task);
 
   @override
@@ -72,6 +82,30 @@ void main() {
       fakeDS.stored.add(_makeTask());
       final tasks = await repo.getTasks();
       expect(tasks, hasLength(1));
+    });
+
+    test('getActiveTasks returns only non-archived tasks', () async {
+      fakeDS.stored.addAll([
+        _makeTask(id: 'a1', title: 'A1'),
+        _makeTask(id: 'a2', title: 'A2').copyWith(archived: true),
+      ]);
+
+      final active = await repo.getActiveTasks();
+
+      expect(active, hasLength(1));
+      expect(active.first.id, 'a1');
+    });
+
+    test('getArchivedTasks returns only archived tasks', () async {
+      fakeDS.stored.addAll([
+        _makeTask(id: 'a1', title: 'A1'),
+        _makeTask(id: 'a2', title: 'A2').copyWith(archived: true),
+      ]);
+
+      final archived = await repo.getArchivedTasks();
+
+      expect(archived, hasLength(1));
+      expect(archived.first.id, 'a2');
     });
   });
 
@@ -135,6 +169,33 @@ void main() {
             fakeDS.lastUpdated!.updatedAt == original.updatedAt,
         isTrue,
       );
+    });
+
+    test('persists archived true without forcing deletedAt', () async {
+      final task = _makeTask(id: 'arch-1').copyWith(
+        archived: true,
+        deletedAt: null,
+      );
+
+      await repo.updateTask(task);
+
+      expect(fakeDS.lastUpdated, isNotNull);
+      expect(fakeDS.lastUpdated!.archived, isTrue);
+      expect(fakeDS.lastUpdated!.deletedAt, isNull);
+    });
+
+    test('persists archived false and keeps deletedAt untouched', () async {
+      final deletedAt = DateTime(2026, 8, 20);
+      final task = _makeTask(id: 'arch-2').copyWith(
+        archived: false,
+        deletedAt: deletedAt,
+      );
+
+      await repo.updateTask(task);
+
+      expect(fakeDS.lastUpdated, isNotNull);
+      expect(fakeDS.lastUpdated!.archived, isFalse);
+      expect(fakeDS.lastUpdated!.deletedAt, deletedAt);
     });
   });
 
