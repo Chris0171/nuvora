@@ -173,6 +173,8 @@ class HomeScreen extends ConsumerWidget {
                                 ),
                               );
                               ref.invalidate(notesProvider);
+                              ref.invalidate(activeNotesProvider);
+                              ref.invalidate(archivedNotesProvider);
                             },
                             icon: const Icon(Icons.note_add_outlined),
                             label: const Text('Create Note'),
@@ -192,6 +194,8 @@ class HomeScreen extends ConsumerWidget {
                                 ),
                               );
                               ref.invalidate(tasksProvider);
+                              ref.invalidate(activeTasksProvider);
+                              ref.invalidate(archivedTasksProvider);
                             },
                             icon: const Icon(Icons.add),
                             label: const Text('Create Task'),
@@ -207,6 +211,8 @@ class HomeScreen extends ConsumerWidget {
                                 ),
                               );
                               ref.invalidate(notesProvider);
+                              ref.invalidate(activeNotesProvider);
+                              ref.invalidate(archivedNotesProvider);
                             },
                             icon: const Icon(Icons.note_add_outlined),
                             label: const Text('Create Note'),

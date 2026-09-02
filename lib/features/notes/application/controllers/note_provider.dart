@@ -22,10 +22,23 @@ final noteSearchQueryProvider = StateProvider<String>((ref) {
 	return '';
 });
 
+final activeNotesProvider = FutureProvider<List<Note>>((ref) async {
+	final query = ref.watch(noteSearchQueryProvider);
+	if (query.trim().isEmpty) {
+		return ref.read(noteControllerProvider).loadActiveNotes();
+	}
+
+	return ref.read(noteControllerProvider).searchNotes(query);
+});
+
+final archivedNotesProvider = FutureProvider<List<Note>>((ref) async {
+	return ref.read(noteControllerProvider).loadArchivedNotes();
+});
+
 final notesProvider = FutureProvider<List<Note>>((ref) async {
 	final query = ref.watch(noteSearchQueryProvider);
 	if (query.trim().isEmpty) {
-		return ref.read(noteControllerProvider).loadNotes();
+		return ref.read(noteControllerProvider).loadActiveNotes();
 	}
 
 	return ref.read(noteControllerProvider).searchNotes(query);

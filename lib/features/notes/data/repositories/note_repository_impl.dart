@@ -18,6 +18,16 @@ class NoteRepositoryImpl implements NoteRepository {
 	}
 
 	@override
+	Future<List<Note>> getActiveNotes() async {
+		return dataSource.getActiveNotes();
+	}
+
+	@override
+	Future<List<Note>> getArchivedNotes() async {
+		return dataSource.getArchivedNotes();
+	}
+
+	@override
 	Future<List<Note>> searchNotes(String query) async {
 		return dataSource.searchNotes(query);
 	}

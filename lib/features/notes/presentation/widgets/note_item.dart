@@ -10,11 +10,15 @@ class NoteItem extends StatefulWidget {
 		required this.note,
 		this.onTap,
 		this.onDelete,
+		this.onTogglePin,
+		this.onToggleArchive,
 	});
 
 	final Note note;
 	final VoidCallback? onTap;
 	final VoidCallback? onDelete;
+	final VoidCallback? onTogglePin;
+	final VoidCallback? onToggleArchive;
 
 	@override
 	State<NoteItem> createState() => _NoteItemState();
@@ -27,7 +31,7 @@ class _NoteItemState extends State<NoteItem> {
 		final now = DateTime.now();
 		final difference = now.difference(date);
 
-		if (difference.inDays == 0) {
+		if (difference.isNegative || difference.inDays == 0) {
 			return 'Today';
 		} else if (difference.inDays == 1) {
 			return 'Yesterday';
@@ -44,7 +48,7 @@ class _NoteItemState extends State<NoteItem> {
 	@override
 	Widget build(BuildContext context) {
 		final contentLines = widget.note.content.length > 140 ? 4 : 3;
-		final dateLabel = _formatDate(widget.note.createdAt);
+		final dateLabel = _formatDate(widget.note.updatedAt);
 		final motionDuration = AppMotion.resolvedDuration(context, AppMotion.duration);
 		final shortMotionDuration = AppMotion.resolvedDuration(context, AppMotion.shortDuration);
 		final motionCurve = AppMotion.resolvedCurve(context, AppMotion.curve);
@@ -98,20 +102,21 @@ class _NoteItemState extends State<NoteItem> {
 													),
 												),
 												const SizedBox(width: AppSpacing.sm),
-												if (widget.note.isPinned)
-													Container(
-														margin: const EdgeInsets.only(right: AppSpacing.xs),
-														padding: const EdgeInsets.all(AppSpacing.xs),
-														decoration: BoxDecoration(
-															color: AppColors.surfaceSecondary,
-															borderRadius: BorderRadius.circular(AppRadius.full),
-														),
-														child: const Icon(
-															Icons.push_pin,
-															size: 14,
-															color: AppColors.textSecondary,
-														),
-													),
+												AppIconActionButton(
+													icon: widget.note.isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+													label: widget.note.isPinned
+														? 'Unpin note ${widget.note.title}'
+														: 'Pin note ${widget.note.title}',
+													color: widget.note.isPinned ? AppColors.warning : AppColors.textSecondary,
+													onPressed: widget.onTogglePin,
+												),
+												AppIconActionButton(
+													icon: widget.note.archived ? Icons.unarchive_outlined : Icons.archive_outlined,
+													label: widget.note.archived
+														? 'Unarchive note ${widget.note.title}'
+														: 'Archive note ${widget.note.title}',
+													onPressed: widget.onToggleArchive,
+												),
 												AppIconActionButton(
 													icon: Icons.close,
 													label: 'Delete note ${widget.note.title}',
@@ -130,21 +135,57 @@ class _NoteItemState extends State<NoteItem> {
 											overflow: TextOverflow.ellipsis,
 										),
 										const SizedBox(height: AppSpacing.md),
-										Container(
-											padding: const EdgeInsets.symmetric(
-												horizontal: AppSpacing.sm,
-												vertical: AppSpacing.xs,
-											),
-											decoration: BoxDecoration(
-												color: AppColors.surfaceSecondary,
-												borderRadius: BorderRadius.circular(AppRadius.full),
-											),
-											child: Text(
-												dateLabel,
-												style: AppTypography.labelSmall.copyWith(
-													color: AppColors.textSecondary,
+										Wrap(
+											spacing: AppSpacing.sm,
+											runSpacing: AppSpacing.xs,
+											crossAxisAlignment: WrapCrossAlignment.center,
+											children: [
+												Container(
+													padding: const EdgeInsets.symmetric(
+														horizontal: AppSpacing.sm,
+														vertical: AppSpacing.xs,
+													),
+													decoration: BoxDecoration(
+														color: AppColors.surfaceSecondary,
+														borderRadius: BorderRadius.circular(AppRadius.full),
+													),
+													child: Text(
+														dateLabel,
+														style: AppTypography.labelSmall.copyWith(
+															color: AppColors.textSecondary,
+														),
+													),
 												),
-											),
+												if (widget.note.archived)
+													Container(
+														padding: const EdgeInsets.symmetric(
+															horizontal: AppSpacing.sm,
+															vertical: AppSpacing.xs,
+														),
+														decoration: BoxDecoration(
+															color: AppColors.surfaceSecondary,
+															borderRadius: BorderRadius.circular(AppRadius.full),
+															border: Border.all(color: AppColors.border),
+														),
+														child: Row(
+															mainAxisSize: MainAxisSize.min,
+															children: [
+																const Icon(
+																	Icons.archive_outlined,
+																	size: 12,
+																	color: AppColors.textSecondary,
+																),
+																const SizedBox(width: AppSpacing.xs),
+																Text(
+																	'Archived',
+																	style: AppTypography.labelSmall.copyWith(
+																		color: AppColors.textSecondary,
+																	),
+																),
+															],
+														),
+													),
+											],
 										),
 									],
 								),

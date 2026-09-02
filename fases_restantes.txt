@@ -5,43 +5,7 @@ Fase 4 — Completar Tasks
 🟢 BLOQUE 2 — Notes
 Fase 5 — Completar Notes
 
-5A — Note Detail + Edición
 
-Abrir una nota existente.
-Conectar CreateNoteScreen(initialNote).
-Editar título/contenido.
-Guardar mediante updateNote.
-Tests.
-
-5B — Pin / Unpin
-
-Acción para fijar nota.
-Acción para quitar fijación.
-Actualización inmediata de UI.
-Persistencia SQLite.
-Tests.
-
-5C — Archive
-
-Archivar/desarchivar.
-Vista de archivadas.
-Persistencia.
-Tests.
-
-5D — Notes UX
-
-Mejorar búsqueda.
-Estados loading/error/empty.
-Ordenación.
-Feedback visual.
-Accesibilidad.
-
-5E — Notes QA
-
-Auditoría completa.
-Tests unit/widget/integration.
-flutter analyze.
-flutter test.
 🔵 BLOQUE 3 — Reminders
 Fase 6 — Reminders UI
 

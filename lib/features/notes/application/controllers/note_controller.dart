@@ -10,6 +10,14 @@ class NoteController {
 		return repository.getNotes();
 	}
 
+	Future<List<Note>> loadActiveNotes() async {
+		return repository.getActiveNotes();
+	}
+
+	Future<List<Note>> loadArchivedNotes() async {
+		return repository.getArchivedNotes();
+	}
+
 	Future<List<Note>> searchNotes(String query) async {
 		return repository.searchNotes(query);
 	}
@@ -20,6 +28,38 @@ class NoteController {
 
 	Future<void> updateNote(Note note) async {
 		await repository.updateNote(note);
+	}
+
+	Future<void> togglePin(Note note) async {
+		await repository.updateNote(
+			note.copyWith(
+				isPinned: !note.isPinned,
+			),
+		);
+	}
+
+	Future<void> archiveNote(Note note) async {
+		await repository.updateNote(
+			note.copyWith(
+				archived: true,
+			),
+		);
+	}
+
+	Future<void> unarchiveNote(Note note) async {
+		await repository.updateNote(
+			note.copyWith(
+				archived: false,
+			),
+		);
+	}
+
+	Future<void> toggleArchive(Note note) async {
+		await repository.updateNote(
+			note.copyWith(
+				archived: !note.archived,
+			),
+		);
 	}
 
 	Future<void> deleteNote(String noteId) async {

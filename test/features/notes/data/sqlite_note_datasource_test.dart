@@ -153,13 +153,113 @@ void main() {
         isTrue,
       );
     });
+
+    test('pin and unpin persist isPinned correctly across reads', () async {
+      final note = _note(id: 'pin-test', title: 'Note', content: 'Body', isPinned: false);
+      await ds.createNote(note);
+
+      // Pin
+      await ds.updateNote(note.copyWith(isPinned: true));
+      var retrieved = await ds.getNotes();
+      expect(retrieved.first.id, 'pin-test');
+      expect(retrieved.first.isPinned, isTrue);
+
+      // Unpin
+      await ds.updateNote(retrieved.first.copyWith(isPinned: false));
+      retrieved = await ds.getNotes();
+      expect(retrieved.first.id, 'pin-test');
+      expect(retrieved.first.isPinned, isFalse);
+    });
+
+    test('archive and unarchive persist archived correctly across reads', () async {
+      final note = _note(id: 'arch-test', title: 'Note', content: 'Body', archived: false, isPinned: true);
+      await ds.createNote(note);
+
+      // Archive
+      await ds.updateNote(note.copyWith(archived: true));
+      var active = await ds.getActiveNotes();
+      var archived = await ds.getArchivedNotes();
+      expect(active, isEmpty);
+      expect(archived, hasLength(1));
+      expect(archived.first.id, 'arch-test');
+      expect(archived.first.archived, isTrue);
+      expect(archived.first.isPinned, isTrue);
+
+      // Unarchive
+      await ds.updateNote(archived.first.copyWith(archived: false));
+      active = await ds.getActiveNotes();
+      archived = await ds.getArchivedNotes();
+      expect(active, hasLength(1));
+      expect(active.first.id, 'arch-test');
+      expect(active.first.archived, isFalse);
+      expect(active.first.isPinned, isTrue);
+      expect(archived, isEmpty);
+    });
+  });
+
+  group('active vs archived queries', () {
+    test('getActiveNotes and getArchivedNotes separate notes correctly', () async {
+      await ds.createNote(_note(id: 'act-1', title: 'Active 1', archived: false));
+      await ds.createNote(_note(id: 'act-2', title: 'Active 2', archived: false));
+      await ds.createNote(_note(id: 'arch-1', title: 'Archived 1', archived: true));
+
+      final active = await ds.getActiveNotes();
+      final archived = await ds.getArchivedNotes();
+
+      expect(active.map((n) => n.id).toList(), ['act-2', 'act-1']);
+      expect(archived.map((n) => n.id).toList(), ['arch-1']);
+    });
+
+    test('searchNotes only searches active notes', () async {
+      await ds.createNote(_note(id: 'act', title: 'Shopping Active', content: 'apples', archived: false));
+      await ds.createNote(_note(id: 'arch', title: 'Shopping Archived', content: 'bananas', archived: true));
+
+      final result = await ds.searchNotes('shopping');
+      expect(result, hasLength(1));
+      expect(result.first.id, 'act');
+    });
+
+    test('reopening datasource preserves notes state (active, pinned, archived)', () async {
+      final sharedPath = 'file:shared_note_reopen_${_dbCounter++}?mode=memory&cache=shared';
+      final ds1 = SQLiteNoteDataSource(
+        databaseFactory: databaseFactoryFfi,
+        databasePath: sharedPath,
+      );
+
+      final n1 = _note(id: 'r-1', title: 'N1', content: 'C1', isPinned: true, archived: false);
+      final n2 = _note(id: 'r-2', title: 'N2', content: 'C2', isPinned: false, archived: true);
+      await ds1.createNote(n1);
+      await ds1.createNote(n2);
+
+      final ds2 = SQLiteNoteDataSource(
+        databaseFactory: databaseFactoryFfi,
+        databasePath: sharedPath,
+      );
+
+      final active = await ds2.getActiveNotes();
+      final archived = await ds2.getArchivedNotes();
+
+      expect(active, hasLength(1));
+      expect(active.first.id, 'r-1');
+      expect(active.first.isPinned, isTrue);
+
+      expect(archived, hasLength(1));
+      expect(archived.first.id, 'r-2');
+      expect(archived.first.archived, isTrue);
+    });
   });
 
   group('soft delete', () {
-    test('deleteNote hides note from getNotes', () async {
-      await ds.createNote(_note(id: '1'));
+    test('deleteNote hides note from getNotes, getActiveNotes, and getArchivedNotes', () async {
+      await ds.createNote(_note(id: '1', archived: false));
+      await ds.createNote(_note(id: '2', archived: true));
+
       await ds.deleteNote('1');
+      await ds.deleteNote('2');
+
       expect(await ds.getNotes(), isEmpty);
+      expect(await ds.getActiveNotes(), isEmpty);
+      expect(await ds.getArchivedNotes(), isEmpty);
     });
 
     test('deleteNote hides note from search', () async {

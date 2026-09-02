@@ -23,6 +23,8 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
 	final _formKey = GlobalKey<FormState>();
 	late final TextEditingController _titleController;
 	late final TextEditingController _contentController;
+	late bool _isPinned;
+	late bool _isArchived;
 	bool _isSaving = false;
 
 	bool get _isEdit => widget.initialNote != null;
@@ -30,6 +32,8 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
 	@override
 	void initState() {
 		super.initState();
+		_isPinned = widget.initialNote?.isPinned ?? false;
+		_isArchived = widget.initialNote?.archived ?? false;
 		_titleController = TextEditingController(text: widget.initialNote?.title);
 		_contentController = TextEditingController(text: widget.initialNote?.content);
 	}
@@ -58,11 +62,14 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
 					title: '',
 					content: '',
 					createdAt: now,
-					isPinned: false,
+					isPinned: _isPinned,
+					archived: _isArchived,
 				))
 			.copyWith(
 				title: _titleController.text.trim(),
 				content: _contentController.text.trim(),
+				isPinned: _isPinned,
+				archived: _isArchived,
 				updatedAt: now,
 			);
 
@@ -73,6 +80,8 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
 				await ref.read(noteControllerProvider).createNote(note);
 			}
 			ref.invalidate(notesProvider);
+			ref.invalidate(activeNotesProvider);
+			ref.invalidate(archivedNotesProvider);
 			if (mounted) Navigator.of(context).pop(true);
 		} catch (_) {
 			if (mounted) {
@@ -92,6 +101,21 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
 			appBar: AppBar(
 				title: Text(_isEdit ? 'Edit Note' : 'New Note'),
 				titleTextStyle: AppTypography.headlineLarge,
+				actions: [
+					if (_isEdit)
+						IconButton(
+							icon: Icon(_isArchived ? Icons.unarchive_outlined : Icons.archive_outlined),
+							color: AppColors.textSecondary,
+							tooltip: _isArchived ? 'Unarchive note' : 'Archive note',
+							onPressed: () => setState(() => _isArchived = !_isArchived),
+						),
+					IconButton(
+						icon: Icon(_isPinned ? Icons.push_pin : Icons.push_pin_outlined),
+						color: _isPinned ? AppColors.warning : AppColors.textSecondary,
+						tooltip: _isPinned ? 'Unpin note' : 'Pin note',
+						onPressed: () => setState(() => _isPinned = !_isPinned),
+					),
+				],
 			),
 			body: SingleChildScrollView(
 				child: Padding(

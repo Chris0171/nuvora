@@ -98,16 +98,38 @@ class SQLiteNoteDataSource extends SqliteDatasourceBase
   }
 
   @override
+  Future<List<Note>> getActiveNotes() async {
+    final database = await db;
+    final rows = await database.query(
+      tableName,
+      where: 'deleted_at IS NULL AND archived = 0',
+      orderBy: 'updated_at DESC',
+    );
+    return rows.map(_noteFromMap).toList(growable: false);
+  }
+
+  @override
+  Future<List<Note>> getArchivedNotes() async {
+    final database = await db;
+    final rows = await database.query(
+      tableName,
+      where: 'deleted_at IS NULL AND archived = 1',
+      orderBy: 'updated_at DESC',
+    );
+    return rows.map(_noteFromMap).toList(growable: false);
+  }
+
+  @override
   Future<List<Note>> searchNotes(String query) async {
     final String cleanedQuery = query.trim();
-    if (cleanedQuery.isEmpty) return getNotes();
+    if (cleanedQuery.isEmpty) return getActiveNotes();
 
     final database = await db;
     final String pattern = '%$cleanedQuery%';
     final rows = await database.query(
       tableName,
       where:
-          'deleted_at IS NULL AND (title LIKE ? COLLATE NOCASE OR content LIKE ? COLLATE NOCASE)',
+          'deleted_at IS NULL AND archived = 0 AND (title LIKE ? COLLATE NOCASE OR content LIKE ? COLLATE NOCASE)',
       whereArgs: <Object?>[pattern, pattern],
       orderBy: 'updated_at DESC',
     );

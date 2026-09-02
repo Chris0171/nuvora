@@ -30,6 +30,14 @@ class _FakeNoteDataSource implements NoteDataSource {
   Future<List<Note>> getNotes() async => List.unmodifiable(notes);
 
   @override
+  Future<List<Note>> getActiveNotes() async =>
+      notes.where((n) => !n.archived).toList();
+
+  @override
+  Future<List<Note>> getArchivedNotes() async =>
+      notes.where((n) => n.archived).toList();
+
+  @override
   Future<List<Note>> searchNotes(String query) async {
     lastSearch = query;
     return notes;
@@ -72,6 +80,20 @@ void main() {
   test('getNotes delegates datasource', () async {
     final result = await repo.getNotes();
     expect(result, hasLength(1));
+  });
+
+  test('getActiveNotes delegates datasource', () async {
+    ds.notes.add(_note(id: 'archived').copyWith(archived: true));
+    final result = await repo.getActiveNotes();
+    expect(result, hasLength(1));
+    expect(result.first.id, '1');
+  });
+
+  test('getArchivedNotes delegates datasource', () async {
+    ds.notes.add(_note(id: 'archived').copyWith(archived: true));
+    final result = await repo.getArchivedNotes();
+    expect(result, hasLength(1));
+    expect(result.first.id, 'archived');
   });
 
   test('searchNotes delegates datasource', () async {

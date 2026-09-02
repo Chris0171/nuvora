@@ -36,6 +36,12 @@ class _FakeRepo implements NoteRepository {
   Future<List<Note>> getNotes() async => [];
 
   @override
+  Future<List<Note>> getActiveNotes() async => [];
+
+  @override
+  Future<List<Note>> getArchivedNotes() async => [];
+
+  @override
   Future<List<Note>> searchNotes(String query) async => [];
 
   @override
@@ -50,6 +56,8 @@ Widget _app(NoteController controller, {Note? initial}) {
     overrides: [
       noteControllerProvider.overrideWithValue(controller),
       notesProvider.overrideWith((_) async => []),
+      activeNotesProvider.overrideWith((_) async => []),
+      archivedNotesProvider.overrideWith((_) async => []),
     ],
     child: MaterialApp(
       home: Scaffold(
@@ -205,5 +213,59 @@ void main() {
 
     completer.complete();
     await tester.pumpAndSettle();
+  });
+
+  testWidgets('allows toggling isPinned during note creation and saves it', (tester) async {
+    final repo = _FakeRepo();
+    final c = NoteController(repository: repo);
+
+    await tester.pumpWidget(_app(c));
+    await _open(tester);
+
+    expect(find.byTooltip('Pin note'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Pin note'));
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Unpin note'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextFormField).first, 'Pinned from start');
+    await tester.enterText(find.byType(TextFormField).last, 'Content here');
+    await tester.tap(find.text('Create Note'));
+    await tester.pumpAndSettle();
+
+    expect(repo.lastCreated, isNotNull);
+    expect(repo.lastCreated!.isPinned, isTrue);
+  });
+
+  testWidgets('allows archiving and unarchiving in edit mode and preserves isPinned', (tester) async {
+    final repo = _FakeRepo();
+    final c = NoteController(repository: repo);
+    final initial = Note(
+      id: 'arch-edit',
+      title: 'Active note',
+      content: 'Some details',
+      createdAt: DateTime(2026, 6, 15),
+      isPinned: true,
+      archived: false,
+    );
+
+    await tester.pumpWidget(_app(c, initial: initial));
+    await _open(tester);
+
+    expect(find.byTooltip('Archive note'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Archive note'));
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Unarchive note'), findsOneWidget);
+
+    await tester.tap(find.text('Update Note'));
+    await tester.pumpAndSettle();
+
+    expect(repo.lastUpdated, isNotNull);
+    expect(repo.lastUpdated!.id, 'arch-edit');
+    expect(repo.lastUpdated!.archived, isTrue);
+    expect(repo.lastUpdated!.isPinned, isTrue);
   });
 }
